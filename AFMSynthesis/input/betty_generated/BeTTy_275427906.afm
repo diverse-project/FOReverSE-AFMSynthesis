@@ -1,0 +1,16 @@
+%Relationships
+root :  F1  F2 ;
+F2 : [F3] ;
+F3 : [F4] ;
+
+%Attributes
+F1.Attribute1: Integer[0 to 10],2,0;
+F1.Attribute0: Integer[0 to 10],10,0;
+F4.Attribute1: Integer[0 to 10],5,0;
+F4.Attribute0: Integer[0 to 10],1,0;
+
+%Constraints
+F2 REQUIRES F1;
+F4.Attribute1 > 0 IFF F1.Attribute0 != 2;
+F1.Attribute1 != 8 AND F4.Attribute1 == 9;
+
