@@ -10,6 +10,8 @@ import synthesis.AFMSynthesizer
 import scala.io.Source
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
+  
+  val INPUT_WIKI_DIR = "input/wikipedia-pcms/"
 
 
   "BeTTy" should "generate some models" in {
@@ -35,7 +37,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   "CSV parser" should "list all products" in {
 	  val parser = new CSVProductListParser
-	  val dir = new File("input/matrices")
+	  val dir = new File(INPUT_WIKI_DIR)
 	  for (inputFile <- dir.listFiles()) {
 		  parser.parse(inputFile.getAbsolutePath)._2.foreach(println)
 	  }
@@ -44,9 +46,16 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "AFMSynthesizer" should "do stuff correctly" in {
 	  val synthesizer = new AFMSynthesizer
 	  val parser = new CSVProductListParser
-	  val input = new File("input/matrices/BeTTy_275427906.csv")
-	  val (features, products) = parser.parse(input.getAbsolutePath)
-	  synthesizer.synthesize(features, products)
+	  
+	  val dir = new File(INPUT_WIKI_DIR)
+	  for (inputMatrix <- dir.listFiles() if inputMatrix.getName.endsWith(".csv")) {
+	  
+	    val (features, domains, products) = parser.parse(inputMatrix.getAbsolutePath)
+//	    synthesizer.synthesize(features, products)
+	    
+	  }
+	  	  
+	  
   }
   
 }
