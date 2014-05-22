@@ -1,0 +1,289 @@
+% revfm.pl -- Reverse engineering on configuration files
+% Authors: Arnaud Gotlieb
+% SIMULA Research Laboratory, Lysaker , Norway
+% Date = Oct. 2013 - version 1
+%        May  2014 - version 2
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% USAGE:
+%
+% Ex: [revfm], revfm([X,Y,Z], [[1,4, 78], [5,6, 7], [1, 6, 78], [5,1, 7]], _LTC), write_ctc_rec(_LTC).
+% interpret, compute the list of cross-tree constraints, write it in a human readable format
+
+% EX: [revfm], revfm([X,Y,Z], [[1,4, 78], [5,6, 7], [1, 6, 78], [5,1, 7]], _LTC), sort_ctc(_LTC, LREQ, NR, LEXC, NX, N).
+% interpret, compute the list of cross-tree constraints, sort out the list of requires, excludes constraints and computes the number of each category
+%
+% EX: [revfm], bench(12, 10, 5, _CTR), sort_ctc(_CTR, LREQ, NR, LEXC, LX, N).
+% interpret, generate a random variability matrix (12 configs, 10 features, 5 values), compute the list of cross-tree constraints, and sort out the constraints
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+:- use_module(library(clpfd)).
+:- use_module(library(random)).
+        
+
+%:- clpfd:full_answer.
+
+
+% revfm(+LV, +TABLE, -LTC)
+% LV must be a list of unbounded vars ;
+% LTC is the list of cross-tree constraints. 3 possibilities:
+% - requires(Feat1, N, Feat2, M) means (Feat1 = N) implies (Feat2 = M) ;
+% - excludes(Feat1, N, Feat2, M) means (Feat1 = N) xor     (Feat2 = M) ;
+% - nil: to be ignored
+
+% Data structure: A feature is a triple feat(N, X, DOMX) where N is the feature number, X is an FD variable, DOMX is a list representing the initial domain of X
+
+% Ex: revfm([X,Y,Z], [[1,4, 78], [5,6, 7], [1, 6, 78], [5,1, 7]], LTC).
+% X = feat(1, _A, [1,5])
+% Y = feat(2, _B, [1,4,6])
+% Z = feat(3, _C, [7,78])
+% LTC = [requires(feat(3,78,[7,78]),78,feat(1,1,[1,5]),1),excludes(feat(3,78,[7,78]),78,feat(1,1,[1,5]),5),nil,excludes(feat(3,78,[7,78]),78,feat(2,_D,[1,4,6]),1),requires(feat(3,7,[7,78]),7,feat(1,5,[1,5]),5),excludes(feat(3,7,[7,78]),7,feat(1,5,[1,5]),1),nil,excludes(feat(3,7,[...|...]),7,feat(2,_E,[...|...]),4),nil,nil|...],
+% _A in{1}\/{5},
+% _B in{1}\/{4}\/{6},
+% _C in{7}\/{78} ? 
+
+revfm(LV, TABLE, LTC) :-
+        create_all_atts(LV, 1, LVV),       % LV is a list of attributed variables
+        table([LVV], TABLE),
+        W = 0,                             % W=1 : activate trace, W=0 : don't
+        update_all_atts(LV),
+        find_all_ltc(LV, W, LV, [], LTC).
+
+create_all_atts([], _N, []).
+create_all_atts([X|Xs], N, [Y|Ys]) :-
+        X = feat(N, Y, _DOMY),
+        N1 is N+1,
+        create_all_atts(Xs, N1, Ys).
+
+update_all_atts([]).
+update_all_atts([X|Xs]) :-
+        arg(2, X, FD_VAR),
+        arg(3, X, DOMY),
+        clpfd:fd_set(FD_VAR, XSET), clpfd:fdset_to_list(XSET, DOMY),
+        update_all_atts(Xs).
+
+find_all_ltc([], W, _LV, LTC, LTC).
+find_all_ltc([X|Xs], W, LV, LTC1, LTC3) :-
+        find_ltc(W, X, LV, LTC1, LTC2),
+        find_all_ltc(Xs, W, LV, LTC2, LTC3).
+
+find_ltc(W, X, LV, LTC_IN, LTC_OUT):-
+        \+ (find_ctc(X, LV, LVal), asserta(lsg(LVal)) ),
+        !.   % no singleton for X
+find_ltc(W, X, LV, LTC_IN, LTC_OUT):-
+        retract(lsg(LVal)),
+        write_ctc(W, LVal),
+        append(LVal, LTC_IN, LTC_OUT).
+        
+find_ctc(X, LV, LVal):-
+        arg(1, X, N),
+        arg(2, X, Y),
+        findall( L,
+                 ( test_hypo(Y), find_singletons(LV, X, N, Y, L) ), % X=Y => LVal
+                 LRES
+               ),
+        flatten(LRES, [], LVal).
+
+% Non-deterministic predicate
+%test_hypo(X) :-
+%        indomain(X).
+
+test_hypo(X) :-
+        clpfd:fd_dom(X, FD),   % FD is a ConstantRange (CR) 	::= ConstantSet | Constant .. Constant | CR /\ CR | CR \/ CR | \ CR 
+        label(FD, X).
+
+label({N}, X) :-
+        !,
+        X = N.
+label(N..N, X) :-
+        !,
+        X = N.
+label(N..M, X) :-
+        N \= M,
+        !,
+        ( X = N ; (N1 is N+1, label(N1..M, X)) ).
+label('\\/'(T1,T2), X) :-
+        !,
+        ( label(T1, X) ; label(T2, X) ). 
+label('/\\'(T1,T2), X) :-
+        !,
+        write('Warning'),nl.
+label('\\'(T), X) :-
+        !,
+        write('Warning'),nl.
+
+find_singletons([], _X, _N, _Y, []).
+find_singletons([F|Fs], X, N, Y, [CTR1,CTR2|RES]) :-
+        arg(1, F, M),
+        M \== N,
+        arg(2, F, S),
+        ( number(S) ->
+            generate_ctr(requires,X,Y,F,S, CTR1)
+        ;
+            CTR1 = nil
+        ),
+        clpfd:fd_set(S, DSET),
+        arg(3, F, DF),
+        clpfd:list_to_fdset(DF,FSET),
+        clpfd:fdset_subtract(FSET, DSET, DIFF),
+        ( clpfd:fdset_singleton(DIFF, ELT) ->
+            generate_ctr(excludes,X,Y,F,ELT, CTR2)
+        ;
+            CTR2 = nil
+        ),
+        !,
+        find_singletons(Fs, X, N, Y, RES).
+find_singletons([F|Fs], X, N, Y, RES) :-
+        find_singletons(Fs, X, N, Y, RES).
+
+generate_ctr(FONCT,X,Y,F,S,CTR) :-
+        CTR =.. [FONCT, X,Y,F,S].
+
+flatten([],OUT, OUT).
+flatten([X|Xs], IN, OUT) :-
+        append(X, IN, IN1), 
+        flatten(Xs, IN1, OUT).
+
+
+sort_ctc([], [], 0, [], 0, 0).
+sort_ctc([nil|LVal],LREQ, NR, LEXC, NX, N1):-
+        !,
+        sort_ctc(LVal, LREQ, NR, LEXC, NX, N),
+        N1 is N+1.
+sort_ctc([REQ|LVal], [REQ|LREQ], NR1, LEXC, NX, N1):-
+        REQ = requires(_,_,_,_),
+        !,
+        sort_ctc(LVal, LREQ, NR, LEXC, NX, N),
+        NR1 is NR+1,
+        N1 is N+1.
+sort_ctc([EXC|LVal], LREQ, NR, [EXC|LEXC], NX1, N1):-
+        REQ = excludes(_,_,_,_),
+        !,
+        sort_ctc(LVal, LREQ, NR, LEXC, NX, N),
+        NX1 is NX+1,
+        N1 is N+1.
+
+
+
+write_ctc(1, LVal) :-
+        write_ctc_rec(LVal).
+write_ctc(0, LVal).
+
+write_ctc_rec([]).
+write_ctc_rec([nil|LVal]):-
+        !,
+        write_ctc_rec(LVal).
+write_ctc_rec([excludes(F1,N,F2,M)|LVal]) :-
+        arg(1, F1, V1),
+        arg(1, F2, V2),
+        write('Feat'),write(V1),write(' = '),write(N), write(' xor '),
+        write('Feat'),write(V2),write(' = '),write(M),nl,
+        !,
+        write_ctc_rec(LVal).
+write_ctc_rec([requires(F1,N,F2,M)|LVal]) :-
+        arg(1, F1, V1),
+        arg(1, F2, V2),
+        write('Feat'),write(V1),write(' = '),write(N), write(' => '),
+        write('Feat'),write(V2),write(' = '),write(M),nl, 
+        write_ctc_rec(LVal).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Naive version for comparison
+%  
+%  revfm_naive([X,Y,Z], [[1,4, 78], [5,6, 7], [1, 6, 78], [5,1, 7]], LTC).
+
+revfm_naive(LV, TABLE, LTC) :-
+        create_all_atts(LV, 1, LVV), % LV is a list of attributed variables
+        rec_search(TABLE, LVV, TABLE, 1, LTC).
+
+rec_search([], LVV, TABLE, _, LTC).
+rec_search([T|Ts], LVV, TABLE, N, LTC) :-
+        rec_search_ctr(T, LVV, T, TABLE, N, 1, LTC1),   % AG: TO BE FINISHED
+        N1 is N+1,
+        rec_search(Ts, LVV, TABLE, N1, LTC2),
+        lists:append(LTC1, LTC2, LTC).
+
+rec_search_ctr([], [], _T, _TABLE, _N, _M, []).
+rec_search_ctr([V|Vs], [X|Xs], T, TABLE, N, M, [CTR|LCTR]) :-
+        extract_col(TABLE, V, N, M, LCOL),
+        find_implications(LCOL, LCOL, V, X, N, M, CTR),  % X=V in cell(N, M) of TABLE
+        M1 is M+1,
+        rec_search_ctr(Vs, Xs, T, TABLE, N, M1, LCTR).
+
+extract_col([], _V, _N, _M, []):-!.
+extract_col([L|Ls], V, N, M, [L|S]) :-
+        lists:nth1(M, L, V),
+        !,
+        extract_col(Ls, V, N, M, S).
+extract_col([L|Ls], V, N, M, S):-
+        extract_col(Ls, V, N, M, S).
+
+
+find_implications([], _LCOL, _V, _X, _N, _M, []) :-!.
+find_implications([W|Ws], LCOL, V, X, N, M, [CTR|LCTR]) :-
+        lists:length(W, P),
+        lookup_impl(1, P, W, M,  V, LCOL, CTR),
+        find_implications(Ws, LCOL, V, X, N, M, LCTR).
+
+% AG: lookup_impl TO BE CONTNUED
+% Typical call: Call: lookup_impl([1,4,78],1,[[1,4,78],[1,6,78]],_5243) ?
+%
+        
+% Algo: 1. Iterate on Table, select a column, Iterate on values, select a value - (X=v) - extract columns st X=v is present
+% find patterns in the remains, go back to 1.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Random generator of one variability maxtrix
+%
+% gen_random(+N, +SIZE, +D, -TABLES)
+% N is the number of configurations to be generated
+% SIZE is the number of features for each individual configuration
+% D is the upper bound value, for generating random value for configration parameters from 0 to D-1
+%
+% For example, gen_random(3, 5, 2, T) produces a table T, of 3 configurations with 5 features with values from 0 to 1 (i.e., Boolean matrix)
+
+gen_random(N, SIZE, D, TABLES) :-
+        gen_random(0, N, SIZE, D, TABLES).
+
+gen_random(N, N, _SIZE, _D, []).
+gen_random(N1, N, SIZE, D, [T|Ts]) :-
+        N1 < N,
+        gen_table(0, SIZE, D, T),
+        N2 is N1+1,
+        gen_random(N2, N, SIZE, D, Ts).
+
+gen_table(S, S, _D, []).
+gen_table(S1, S, D, [X|Xs]) :-
+        S1 < S,
+
+        random(0, D, X),
+        S2 is S1+1,
+        gen_table(S2, S, D, Xs).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BENCHMARKS
+%
+% [revfm], bench(12, 10, 5, _CTR), sort_ctc(_CTR, LREQ, NR, LEXC, LX, N).
+% bench(50, 25, 15, _CTR), sort_ctc(_CTR, LREQ, NR, LEXC, LX, N). 
+% bench(20, 10, 10, _CTR), sort_ctc(_CTR, LREQ, NR, LEXC, LX, N). 
+
+bench(N, SIZE, D, CTR) :-
+        gen_random(N, SIZE, D, TABLE),
+        lists:length(LV, SIZE),
+        statistics(runtime,[_,_T0]),
+        revfm(LV, TABLE, CTR),
+        statistics(runtime,[_,_T1]),
+        T is _T1-_T0,
+        write('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'),nl,
+        write('STATISTICS'),nl,
+        write('Runtime: '), write(T),write(' miliseconds'),nl,
+        fd_statistics,
+        write('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'),nl.
+
