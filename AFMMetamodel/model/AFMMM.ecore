@@ -5,6 +5,8 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="features" lowerBound="1"
         upperBound="-1" eType="#//Feature" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="root" lowerBound="1" eType="#//Feature"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="readableConstraints" upperBound="-1"
+        eType="#//CrossTreeConstraint" containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Feature">
     <eStructuralFeatures xsi:type="ecore:EReference" name="relations" upperBound="-1"
@@ -36,8 +38,6 @@
         eType="#//AttributedFeatureDiagram" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="constraint" eType="#//CrossTreeConstraint"
         containment="true"/>
-    <eStructuralFeatures xsi:type="ecore:EReference" name="niceConstraints" upperBound="-1"
-        eType="#//CrossTreeConstraint" containment="true"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="domains" upperBound="-1"
         eType="#//Domain" containment="true"/>
   </eClassifiers>
