@@ -14,7 +14,7 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="attributes" upperBound="-1"
         eType="#//Attribute" containment="true"/>
   </eClassifiers>
-  <eClassifiers xsi:type="ecore:EClass" name="Relation">
+  <eClassifiers xsi:type="ecore:EClass" name="Relation" abstract="true">
     <eStructuralFeatures xsi:type="ecore:EReference" name="parent" lowerBound="1"
         eType="#//Feature"/>
     <eStructuralFeatures xsi:type="ecore:EReference" name="children" lowerBound="1"
@@ -25,7 +25,7 @@
   <eClassifiers xsi:type="ecore:EClass" name="Mutex" eSuperTypes="#//Relation"/>
   <eClassifiers xsi:type="ecore:EClass" name="XOr" eSuperTypes="#//Relation"/>
   <eClassifiers xsi:type="ecore:EClass" name="Or" eSuperTypes="#//Relation"/>
-  <eClassifiers xsi:type="ecore:EClass" name="Domain"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Domain" abstract="true"/>
   <eClassifiers xsi:type="ecore:EClass" name="Boolean" eSuperTypes="#//Domain"/>
   <eClassifiers xsi:type="ecore:EClass" name="Integer" eSuperTypes="#//Domain"/>
   <eClassifiers xsi:type="ecore:EClass" name="Real" eSuperTypes="#//Domain"/>
