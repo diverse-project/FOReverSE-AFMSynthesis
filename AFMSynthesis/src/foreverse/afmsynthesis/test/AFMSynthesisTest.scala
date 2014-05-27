@@ -7,7 +7,7 @@ import main.samples.randomAFMGeneration.RandomAttributedFMGenerationTest
 import examples.RandomConfigurations
 import scala.io.Source
 import foreverse.afmsynthesis.synthesis.AFMSynthesizer
-import foreverse.afmsynthesis.input.CSVProductListParser
+import foreverse.afmsynthesis.input.parser.CSVProductListParser
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -38,8 +38,17 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "CSV parser" should "list all products" in {
 	  val parser = new CSVProductListParser
 	  val dir = new File(INPUT_WIKI_DIR)
-	  for (inputFile <- dir.listFiles()) {
-		  parser.parse(inputFile.getAbsolutePath)._2.foreach(println)
+	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
+		  val productList = parser.parse(inputFile.getAbsolutePath)
+		  
+		  println(inputFile)
+		  println("----- Features -----")
+		  productList.features.foreach(println)
+		  println("----- Attributes -----")
+		  productList.attributes.foreach(println)
+		  println("----- Matrix -----")
+		  productList.featureByProductMatrix.foreach(e =>
+		    println(e._1.name + " => " + e._2))
 	  }
   }
   
@@ -49,10 +58,11 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  
 	  val dir = new File(INPUT_WIKI_DIR)
 	  for (inputMatrix <- dir.listFiles() if inputMatrix.getName.endsWith(".csv")) {
-	  
-	    val (features, domains, products) = parser.parse(inputMatrix.getAbsolutePath)
-//	    synthesizer.synthesize(features, products)
-	    
+		println(inputMatrix)
+	    val synthesisProblem = parser.parse(inputMatrix.getAbsolutePath)
+	    println(synthesisProblem.features.size)
+	    val afm = synthesizer.synthesize(synthesisProblem)
+	    println(afm.diagram.features.size)
 	  }
 	  	  
 	  

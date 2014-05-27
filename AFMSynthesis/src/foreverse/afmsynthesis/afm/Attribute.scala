@@ -1,9 +1,9 @@
 package foreverse.afmsynthesis.afm
 
-class Attribute (
-    val name : String,
-	val domain : Domain
-    
-){
-	
-}
+class Attribute(initName : String, val domain : Domain) extends VariationPoint(initName) {
+  
+  override def toString() : String = {
+	"Attribute(" + name + "," + domain + ")"
+  }
+  
+} 

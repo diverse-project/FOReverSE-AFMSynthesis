@@ -1,8 +1,9 @@
 package foreverse.afmsynthesis.afm
 
-class Feature(
-	val name : String
-) {
-	
+class Feature(initName : String) extends VariationPoint(initName) {
+  
+  override def toString() : String = {
+	"Feature(" + name + ")"
+  }
   
 }

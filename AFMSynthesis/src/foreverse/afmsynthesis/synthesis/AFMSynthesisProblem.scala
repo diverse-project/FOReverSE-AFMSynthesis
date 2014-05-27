@@ -8,11 +8,8 @@ abstract class AFMSynthesisProblem(
     initAttributes : List[Attribute]
 ){
 
-  protected var _features : List[Feature] = initFeatures
-  def features = _features
-  
-  protected var _attributes : List[Attribute] = initAttributes
-  def attributes = _attributes
+  var features : List[Feature] = initFeatures
+  var attributes : List[Attribute] = initAttributes
   
   def removeDeadFeatures()
   
