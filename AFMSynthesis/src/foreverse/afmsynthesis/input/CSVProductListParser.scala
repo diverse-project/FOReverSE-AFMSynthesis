@@ -1,4 +1,4 @@
-package input
+package foreverse.afmsynthesis.input
 
 import com.github.tototoshi.csv.CSVReader
 import scala.collection.mutable.ListBuffer

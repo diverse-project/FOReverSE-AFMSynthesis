@@ -1,13 +1,13 @@
-package test
+package foreverse.afmsynthesis.test
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import java.io.File
 import main.samples.randomAFMGeneration.RandomAttributedFMGenerationTest
 import examples.RandomConfigurations
-import input.CSVProductListParser
-import synthesis.AFMSynthesizer
 import scala.io.Source
+import foreverse.afmsynthesis.synthesis.AFMSynthesizer
+import foreverse.afmsynthesis.input.CSVProductListParser
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -57,5 +57,13 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  	  
 	  
   }
+  
+//  "Prolog reasoner" should "run an external prolog program" in {
+//  	  System.load((new File("lib/libsprt4-3-0.so")).getAbsolutePath())
+//	  System.load((new File("lib/libspnative.so")).getAbsolutePath())
+//
+//	  val sp = new SICStus
+//
+//  }
   
 }

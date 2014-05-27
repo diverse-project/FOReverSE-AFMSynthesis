@@ -1,5 +1,0 @@
-package synthesis
-
-class Formula {
-
-}
