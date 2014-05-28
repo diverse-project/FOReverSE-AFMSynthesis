@@ -13,8 +13,8 @@ abstract class AFMSynthesisProblem(
   
   def removeDeadFeatures()
   
-//  def computeBinaryImplicationGraph()
-//  
+  def computeBinaryImplicationGraph() : BinaryImplicationGraph
+  
 //  def computeMutexGraph()
 //  
 //  def computeMutexGroups()

@@ -6,6 +6,9 @@ import foreverse.afmsynthesis.synthesis.AFMSynthesisProblem
 import foreverse.afmsynthesis.afm.Domain
 import foreverse.afmsynthesis.afm.VariationPoint
 import foreverse.afmsynthesis.afm.VariationPoint
+import foreverse.afmsynthesis.synthesis.BinaryImplicationGraph
+import foreverse.afmsynthesis.afm.Feature
+import foreverse.afmsynthesis.afm.Feature
 
 class ProductList (
     var featureByProductMatrix : Map[VariationPoint, List[Any]]
@@ -32,6 +35,35 @@ class ProductList (
 		features = liveFeatures
 		featureByProductMatrix = featureByProductMatrix.filter(e => liveFeatures.contains(e._1))
 	}
+	
+	override def computeBinaryImplicationGraph() : BinaryImplicationGraph = {
+		val big = new BinaryImplicationGraph
+		
+		big.addNodes(features)
+		
+		for (child <- features; parent <- features if child != parent) {
+		  val products = featureByProductMatrix(child) zip featureByProductMatrix(parent)
+		  if (!products.exists(p => p._1.asInstanceOf[Boolean] && !p._2.asInstanceOf[Boolean])) {
+		    big.addEdge(child, parent)
+		  }
+		}
+		big
+	}
+	
+	
+//	override def computeMutexGraph() : MutexGraph = {
+//		val mg = new MutexGraph
+//		
+//		mg.addNodes(features)
+//		
+//		for (child <- features; parent <- features) {
+//		  val products = featureByProductMatrix(child) zip featureByProductMatrix(parent)
+//		  if (products.exists(p => p._1.asInstanceOf[Boolean] && !p._2.asInstanceOf[Boolean])) {
+//		    big.addEdge(child, parent)
+//		  }
+//		}
+//		mg
+//	}
 
   
 }

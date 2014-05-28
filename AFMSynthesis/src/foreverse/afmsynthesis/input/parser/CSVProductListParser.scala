@@ -11,7 +11,6 @@ import foreverse.afmsynthesis.afm.domains.BooleanDomain
 import foreverse.afmsynthesis.afm.domains.IntegerDomain
 import foreverse.afmsynthesis.afm.domains.RealDomain
 import foreverse.afmsynthesis.afm.domains.EnumDomain
-import foreverse.afmsynthesis.afm.domains.EnumDomain
 
 class CSVProductListParser {
 

@@ -13,7 +13,8 @@ class AFMSynthesizer {
 		val afd = new AttributedFeatureDiagram
 	  
 		synthesisProblem.removeDeadFeatures
-//		synthesisProblem.computeBinaryImplicationGraph
+		val big = synthesisProblem.computeBinaryImplicationGraph
+		println(big.toDot)
 //		// set hierarchy or compute DAG
 //		synthesisProblem.computeMutexGraph
 //		synthesisProblem.computeMutexGroups
