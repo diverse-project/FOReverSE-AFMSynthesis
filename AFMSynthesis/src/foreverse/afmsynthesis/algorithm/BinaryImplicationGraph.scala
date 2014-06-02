@@ -1,4 +1,4 @@
-package foreverse.afmsynthesis.synthesis
+package foreverse.afmsynthesis.algorithm
 
 import scalax.collection.mutable.Graph
 import foreverse.afmsynthesis.afm.Feature

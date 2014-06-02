@@ -1,9 +1,7 @@
-package foreverse.afmsynthesis.input.parser
+package foreverse.afmsynthesis.input
 
 import com.github.tototoshi.csv.CSVReader
 import scala.collection.mutable.ListBuffer
-import foreverse.afmsynthesis.input.ProductList
-import foreverse.afmsynthesis.input.ProductList
 import foreverse.afmsynthesis.afm.VariationPoint
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.Attribute
@@ -11,6 +9,10 @@ import foreverse.afmsynthesis.afm.domains.BooleanDomain
 import foreverse.afmsynthesis.afm.domains.IntegerDomain
 import foreverse.afmsynthesis.afm.domains.RealDomain
 import foreverse.afmsynthesis.afm.domains.EnumDomain
+import foreverse.afmsynthesis.solver.ProductListSolver
+import foreverse.afmsynthesis.afm.Feature
+import foreverse.afmsynthesis.afm.Attribute
+import foreverse.afmsynthesis.afm.VariationPoint
 
 class CSVProductListParser {
 
@@ -20,20 +22,22 @@ class CSVProductListParser {
 		val labels = reader.readNext.getOrElse(Nil)
 		val domains = reader.readNext.getOrElse(Nil)
 		
-		val products : ListBuffer[List[String]] = ListBuffer()
+		val productsVerbatim : ListBuffer[List[String]] = ListBuffer()
 		for (product <- reader) {
-			products += product.toList
+			productsVerbatim += product.toList
 		}
 		reader.close
 		
 		
 		// Transpose matrix
-		val transposedProducts= products.toList.transpose
+		val transposedProducts= productsVerbatim.toList.transpose
 		val rawFeatureByProductMatrix = (labels, domains, transposedProducts).zipped.toList
-		var featureByProductMatrix : Map[VariationPoint, List[Any]] = Map.empty
 		
 		// Interpret values
-		for (metadata <- rawFeatureByProductMatrix) yield {
+		val variationPoints : ListBuffer[VariationPoint] = ListBuffer.empty
+		val transposedInterpretedProducts : ListBuffer[List[Any]] = ListBuffer.empty
+		
+		for (metadata <- rawFeatureByProductMatrix) {
 			val name = metadata._1
 			val domain = metadata._2
 			val values = metadata._3
@@ -52,10 +56,12 @@ class CSVProductListParser {
 			    (new Attribute(name, EnumDomain(values.distinct.toSet, "")),values)
 			}
 			
-			featureByProductMatrix += variationPoint -> interpretedValues
+			variationPoints += variationPoint
+			transposedInterpretedProducts += interpretedValues
 		}
+				
+		val interpretedProducts = transposedInterpretedProducts.toList.transpose
 		
-		// Create a synthesis problem from the interpreted matrix
-		new ProductList(featureByProductMatrix)
+		new ProductList(variationPoints.toList, interpretedProducts)
 	}
 }

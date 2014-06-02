@@ -4,8 +4,9 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import java.io.File
 import scala.io.Source
-import foreverse.afmsynthesis.synthesis.AFMSynthesizer
-import foreverse.afmsynthesis.input.parser.CSVProductListParser
+import foreverse.afmsynthesis.input.CSVProductListParser
+import foreverse.afmsynthesis.algorithm.AFMSynthesizer
+import foreverse.afmsynthesis.solver.SATProductListSolver
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -40,25 +41,23 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		  val productList = parser.parse(inputFile.getAbsolutePath)
 		  
 		  println(inputFile)
-		  println("----- Features -----")
-		  productList.features.foreach(println)
-		  println("----- Attributes -----")
-		  productList.attributes.foreach(println)
-		  println("----- Matrix -----")
-		  productList.featureByProductMatrix.foreach(e =>
-		    println(e._1.name + " => " + e._2))
+		  println("----- VPs -----")
+		  productList.variationPoints.foreach(println)
+		  println("----- Products -----")
+		  productList.products.foreach(println)
 	  }
   }
   
-  "AFMSynthesizer" should "do stuff correctly" in {
+  "AFMSynthesizer" should "synthesize an AFM from a product list" in {
 	  val synthesizer = new AFMSynthesizer
 	  val parser = new CSVProductListParser
 	  
 	  val dir = new File(INPUT_WIKI_DIR)
 	  for (inputMatrix <- dir.listFiles() if inputMatrix.getName.endsWith(".csv")) {
 		println(inputMatrix)
-	    val synthesisProblem = parser.parse(inputMatrix.getAbsolutePath)
-	    println(synthesisProblem.features.size)
+	    val productList = parser.parse(inputMatrix.getAbsolutePath)
+	    println(productList.variationPoints.size)
+	    val synthesisProblem = new SATProductListSolver(productList)
 	    val afm = synthesizer.synthesize(synthesisProblem)
 	    println(afm.diagram.features.size)
 	  }

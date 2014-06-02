@@ -1,4 +1,4 @@
-package foreverse.afmsynthesis.synthesis
+package foreverse.afmsynthesis.algorithm
 
 import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.Feature
