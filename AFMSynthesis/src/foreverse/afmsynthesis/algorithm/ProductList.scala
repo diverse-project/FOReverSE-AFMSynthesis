@@ -1,4 +1,4 @@
-package foreverse.afmsynthesis.input
+package foreverse.afmsynthesis.algorithm
 
 import foreverse.afmsynthesis.afm.VariationPoint
 import foreverse.afmsynthesis.afm.VariationPoint

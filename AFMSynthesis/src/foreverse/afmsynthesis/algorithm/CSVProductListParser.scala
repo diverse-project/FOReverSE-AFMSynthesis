@@ -1,18 +1,19 @@
-package foreverse.afmsynthesis.input
+package foreverse.afmsynthesis.algorithm
 
 import com.github.tototoshi.csv.CSVReader
 import scala.collection.mutable.ListBuffer
 import foreverse.afmsynthesis.afm.VariationPoint
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.Attribute
-import foreverse.afmsynthesis.afm.domains.BooleanDomain
 import foreverse.afmsynthesis.afm.domains.IntegerDomain
 import foreverse.afmsynthesis.afm.domains.RealDomain
 import foreverse.afmsynthesis.afm.domains.EnumDomain
-import foreverse.afmsynthesis.solver.ProductListSolver
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.VariationPoint
+import scala.runtime.ZippedTraalgorithmble3.zippedTraversable3ToTraversable
+import foreverse.afmsynthesis.synthesis.ProductList
+import foreverse.afmsynthealgorithmesis.ProductList
 
 class CSVProductListParser {
 

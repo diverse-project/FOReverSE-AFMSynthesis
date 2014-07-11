@@ -1,7 +1,9 @@
 package foreverse.afmsynthesis.afm
 
-class AttributedFeatureModel {
+class AttributedFeatureModel(
+	val diagram : AttributedFeatureDiagram,
+	val constraint : CrossTreeConstraint
+) {
 
-	var diagram : AttributedFeatureDiagram = _
   
 }

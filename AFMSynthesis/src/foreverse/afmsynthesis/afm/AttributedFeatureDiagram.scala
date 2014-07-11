@@ -1,8 +1,10 @@
 package foreverse.afmsynthesis.afm
 
-class AttributedFeatureDiagram {
-  
-  var features : List[Feature] = Nil
-  var root : Feature = _
+class AttributedFeatureDiagram ( 
+  val features : List[Feature],
+  val root : Feature,
+  val relations : List[Relation],
+  val constraints : List[CrossTreeConstraint]
+) {
   
 }
