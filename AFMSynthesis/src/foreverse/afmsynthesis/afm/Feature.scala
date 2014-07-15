@@ -8,6 +8,8 @@ class Feature(
     
 ) {
   
+  def this(initName : String) = this(initName, Nil, None, Nil)
+  
   override def toString() : String = {
 	"Feature(" + name + ")"
   }

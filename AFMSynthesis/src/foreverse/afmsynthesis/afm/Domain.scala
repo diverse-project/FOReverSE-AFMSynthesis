@@ -1,8 +1,18 @@
 package foreverse.afmsynthesis.afm
 
-abstract class Domain(val _nullValue : Any) {
-	def isNullValue(value : Any) : Boolean = {
-		value == _nullValue
+class Domain(
+    val values : Set[String], 
+    val nullValue : String, 
+    val lessThan : (String, String) => Boolean
+) {
+  
+	def isNullValue(value : String) : Boolean = {
+		value == nullValue
 	}
+	
+	override def toString() : String = {
+		"Domain(" + values.mkString("{", ", ", "}") + ", " + nullValue + ")"
+	}
+	
 }
 

@@ -1,23 +1,61 @@
 package foreverse.afmsynthesis.algorithm
 
-import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.Feature
+import scala.Array.canBuildFrom
 import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
+import foreverse.afmsynthesis.afm.AttributedFeatureModel
 import foreverse.afmsynthesis.afm.CrossTreeConstraint
+import foreverse.afmsynthesis.afm.Domain
 import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.domains.EnumDomain
+import foreverse.afmsynthesis.afm.Knowledge
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.AttributeValue
+import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.Value
+import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.MutexGraph
 
 class AFMSynthesizer {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : Any) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
 	  
 	  
-	  val (features : List[Feature], attributes : List[Attribute]) = extractFeaturesAndAttributes(matrix, knowledge)
-	  extractAttributeDomains(attributes, matrix, knowledge)
+	  val domains = extractDomains(matrix, knowledge)
 	  
+	  println("Domains")
+	  domains.foreach(d => println(d._1 + " => " + d._2))
+	  println
+	  
+	  val (features, attributes) = extractFeaturesAndAttributes(matrix, domains, knowledge)
+	  
+	  println("Features")
+	  features.foreach(println)
+	  println
+	  
+	  println("Attributes")
+	  attributes.foreach(println)
+	  println
+	  
+	  
+	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, domains)
+	  println("Constraints")
+	  constraints.foreach(println)
+	  println
+	  
+	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
+	  println("BIG")
+	  println(big.toDot)
+	  println
+	  
+	  println("Mutex graph")
+	  println(mutexGraph.toDot)
+	  println
+	  
+	  
+	  val hierarchy = extractHierarchy(big, knowledge)
 	  
 	  val root = new Feature("root", Nil, None, Nil)
 	  val afd = new AttributedFeatureDiagram(features, root, Nil, Nil)
@@ -26,24 +64,135 @@ class AFMSynthesizer {
 	  afm
 	}
 
-	
-	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, knowledge : Any) : (List[Feature], List[Attribute]) = {
-		(Nil, Nil)
-	}
-	
-	def extractAttributeDomains(attributes : List[Attribute], matrix : ConfigurationMatrix, knowledge : Any) {
+	/**
+	 * Extract domains of columns from the matrix
+	 */
+	def extractDomains(matrix : ConfigurationMatrix, knowledge : Knowledge) : Map[String, Domain] = {
+	  
+	  val domains : collection.mutable.Map[String, Domain] = collection.mutable.Map.empty
 		
-	  for (attribute <- attributes;
-		label <- matrix.labels.zipWithIndex
-		if attribute == label._1) {
+	  for (label <- matrix.labels.zipWithIndex) {
 	    
 	    val values = (for (configuration <- matrix.configurations) yield {
 		  configuration(label._2)
 		}).toSet
 		
-		// FIXME : determine domain type and null value according to the knowledge
-		attribute.domain = EnumDomain(values, "N/A") 
+		// FIXME : determine null value according to the knowledge
+		val nullValue = "" 
 		
+		// FIXME : determine (partial) order according to the knowledge
+		val inferior = (a : String, b : String) => false 
+		
+		val domain = new Domain(values, nullValue, inferior)
+		
+		domains += (label._1 -> domain)
 	  }
+	  
+	  domains.toMap
 	}
+	
+	/**
+	 * Extract features and attributes from the matrix
+	 */
+	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Domain], knowledge : Knowledge) 
+	: (List[Feature], List[Attribute]) = {
+	  knowledge.extractFeaturesAndAttributes(matrix, domains)
+	}
+
+	/**
+	 * Compute binary implications between the values of the matrix's columns
+	 */
+	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], domains : Map[String, Domain])
+	: List[BinaryImplicationConstraint] = {
+
+	  // Create dictionary of matrix values
+	  val dictionaries : collection.mutable.Map[String, Map[String, String]] = collection.mutable.Map.empty
+
+	  for ((label, labelIndex) <- matrix.labels.zipWithIndex) yield {
+	    val dictionary : collection.mutable.Map[String, String] = collection.mutable.Map.empty
+
+	    val columnDomain = domains(label)
+	    val values = columnDomain.values.toList.sortWith(columnDomain.lessThan)
+	    
+	    for ((value, valueIndex) <- values.zipWithIndex) {
+	    	dictionary += (value -> valueIndex.toString)
+	    }
+	    
+	    dictionaries += (label -> dictionary.toMap) 		
+	  }
+	  
+	  // Convert matrix to reasoner format
+	  val convertedConfigurations = matrix.configurations.map(configuration =>
+	    for ((value, index) <- configuration.zipWithIndex) yield {
+	      dictionaries(matrix.labels(index))(value)
+	    }
+	  )
+	  
+	  val convertedMatrix = new ConfigurationMatrix(matrix.labels, convertedConfigurations)
+	  
+	  // Compute binary implication constraints with a prolog reasoner
+	  // TODO : run sicstus
+	  
+	    
+	  // Convert the output of the reasoner to a list of constraints over the features and attributes
+	  val invertedDictionaries = dictionaries.map((kv) => (kv._1 -> kv._2.map(_.swap)))
+	  // TODO : get back the original values
+	  // TODO : map the values to either features or attribute values
+	  	  
+	  Nil
+	}
+	
+	/**
+	 * Compute binary implication graph and mutex graph
+	 */
+	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
+	: (BinaryImplicationGraph, MutexGraph) = {
+	  
+	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
+	    value match {
+	      case FeatureValue(feature, positive) => Some(FeatureValue(feature, positive))
+	      case AttributeValue(_, _) => None
+	    }
+	  }
+	  
+	  def iterateOverPositiveValues(values : List[Value])(body : FeatureValue => Unit) = {
+	     for (value <- values;
+	        featureValue = toFeatureValue(value)
+	        if featureValue.isDefined && featureValue.get.positive
+	        ) {
+	       body(featureValue.get)
+	     }
+	  }
+	  
+	  val big = new BinaryImplicationGraph
+	  big.addNodes(features)
+	  big.addEdge(features.head, features(2))
+	  
+	  val mutexGraph = new MutexGraph
+	  mutexGraph.addNodes(features)
+	  
+	  for (constraint <- constraints;
+		  source = toFeatureValue(constraint.value)
+	      if source.isDefined && source.get.positive) {
+	    
+	   	  iterateOverPositiveValues(constraint.implies) {
+	   		  target => big.addEdge(source.get.feature, target.feature)
+	   	  }
+
+	   	  iterateOverPositiveValues(constraint.excludes) {
+	   		  target => mutexGraph.addEdge(source.get.feature, target.feature)
+	   	  }
+	  }
+	  
+	  (big, mutexGraph)
+	}
+	
+	/**
+	 * Extract a particular hierarchy for the AFM
+	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
+	 */
+	def extractHierarchy(big : BinaryImplicationGraph, knowledge : Knowledge) = {
+	  // TODO :  knowledge.selectHierarchy(big)
+	}
+	
 }

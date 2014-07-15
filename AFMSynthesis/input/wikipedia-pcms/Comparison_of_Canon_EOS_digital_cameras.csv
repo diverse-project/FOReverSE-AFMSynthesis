@@ -1,5 +1,4 @@
 Image processor,Sensor format,Sensor type,Megapixels,Min ISO,Max ISO,Autofocus points,Display size (inch),Display resolution (k pixels),Articulated display,Touchscreen display,Storage - CF,Storage – SD,Storage – SDHC,Storage – SDXC,Storage – SDXC (UHS-I),Live view,Max FPS,Release date – year,Release date – quarter,Weight (kg),Width (mm),Height (mm),Depth (mm)
-ENUM,ENUM,ENUM,DOUBLE(64),INT(32),INT(32),INT(32),DOUBLE(64),INT(32),BOOLEAN,BOOLEAN,BOOLEAN,BOOLEAN,BOOLEAN,BOOLEAN,BOOLEAN,BOOLEAN,DOUBLE(64),INT(32),INT(32),DOUBLE(64),DOUBLE(64),DOUBLE(64),DOUBLE(64)
 DIGIC,Full-frame,CMOS,11.4,50,1250,45,2,120,0,0,1,0,0,0,0,0,3,2002,4,1.265,156,158,80
 DIGIC II,Full-frame,CMOS,16.7,50,3200,45,2,230,0,0,1,1,0,0,0,0,4.5,2004,4,1.215,156,158,80
 Dual DIGIC III,Full-frame,CMOS,21.1,50,3200,45,3,230,0,0,1,1,0,0,0,1,5,2007,4,1.21,156,160,80
