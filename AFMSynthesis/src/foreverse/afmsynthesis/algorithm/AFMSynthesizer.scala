@@ -16,6 +16,8 @@ import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.Value
 import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.MutexGraph
+import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.AttributeValue
 
 class AFMSynthesizer {
   
@@ -166,7 +168,6 @@ class AFMSynthesizer {
 	  
 	  val big = new BinaryImplicationGraph
 	  big.addNodes(features)
-	  big.addEdge(features.head, features(2))
 	  
 	  val mutexGraph = new MutexGraph
 	  mutexGraph.addNodes(features)
@@ -192,7 +193,36 @@ class AFMSynthesizer {
 	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
 	 */
 	def extractHierarchy(big : BinaryImplicationGraph, knowledge : Knowledge) = {
-	  // TODO :  knowledge.selectHierarchy(big)
+	  // TODO : define return type
+	  knowledge.selectHierarchy(big)
+	}
+	
+	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImplicationConstraint], knowledge : Knowledge) = {
+
+	  // Compute legal positions for the attributes
+	  val legalPositions = collection.mutable.Map.empty[Attribute, List[Feature]]
+	  
+	  // If not f => a = 0d, then the feature f is a legal position for the attribute a 
+	  for (constraint <- constraints) {
+	    constraint.value match {
+	      case FeatureValue(feature, positive) if !positive =>
+	        for (implied <- constraint.implies) {
+	          implied match {
+	            case AttributeValue(attribute, value) if attribute.domain.nullValue == value =>
+	              legalPositions += attribute -> (feature :: legalPositions.getOrElse(attribute, Nil))
+	            case _ =>
+	          }
+	        }
+	      case _ =>
+	    }
+	  }
+
+	  // Choose a position for each attribute
+	  for (attribute <- attributes) {
+	    val selectedFeature = knowledge.placeAttribute(attribute, legalPositions(attribute))
+	    selectedFeature.attributes = attribute :: selectedFeature.attributes
+	  }
+
 	}
 	
 }

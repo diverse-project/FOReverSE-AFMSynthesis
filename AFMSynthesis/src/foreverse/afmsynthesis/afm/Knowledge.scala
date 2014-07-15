@@ -3,6 +3,7 @@ package foreverse.afmsynthesis.afm
 import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ListBuffer
+import foreverse.afmsynthesis.algorithm.BinaryImplicationGraph
 
 class Knowledge {
 
@@ -25,6 +26,15 @@ class Knowledge {
 	  
 	  (features.toList, attributes.toList)
 
+  }
+  
+  def selectHierarchy(big : BinaryImplicationGraph) {
+    // TODO : should we return something or directly assign the hierarchy in the features?
+    // TODO : select a hierarchy
+  }
+  
+  def placeAttribute(attribute : Attribute, legalPositions : List[Feature]) : Feature = {
+    legalPositions.head
   }
   
 }

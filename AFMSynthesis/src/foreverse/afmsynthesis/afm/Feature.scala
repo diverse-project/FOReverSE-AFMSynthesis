@@ -2,7 +2,7 @@ package foreverse.afmsynthesis.afm
 
 class Feature(
     val name : String,
-    val attributes : List[Attribute],
+    var attributes : List[Attribute],
     val parentRelation : Option[Relation],
     val childRelations : List[Relation] 
     

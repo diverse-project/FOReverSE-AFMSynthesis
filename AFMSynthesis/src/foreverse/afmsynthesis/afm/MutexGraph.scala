@@ -27,10 +27,14 @@ class MutexGraph {
 	  val root = DotRootGraph(directed=false, id=None)
 	  def edgeTransformer(innerEdge: scalax.collection.Graph[Feature,UnDiEdge]#EdgeT): Option[(DotGraph,DotEdgeStmt)] = {
 		  val edge = innerEdge.edge
-		  Some((root, DotEdgeStmt(edge._1.toString, edge._2.toString))) 
+		  Some(root, DotEdgeStmt(edge._1.toString, edge._2.toString)) 
 	  }
 	  
-	  val dot = graph.toDot(root, edgeTransformer)
+	   def iNodeTransformer(node : scalax.collection.Graph[Feature,UnDiEdge]#NodeT) : Option[(DotGraph, DotNodeStmt)] = {
+	    Some(root, DotNodeStmt(node.toString, Seq.empty[DotAttr]))
+	  }
+	  
+	  val dot = graph.toDot(root, edgeTransformer, iNodeTransformer=Some(iNodeTransformer))
 	  dot
 	}
 	

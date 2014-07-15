@@ -31,7 +31,11 @@ class BinaryImplicationGraph {// extends DefaultGraphImpl[Feature, DiEdge](Set.e
 		  Some(root, DotEdgeStmt(edge.from.toString, edge.to.toString))
 	  }
 	  
-	  val dot = graph.toDot(root, edgeTransformer)
+	  def iNodeTransformer(node : scalax.collection.Graph[Feature,DiEdge]#NodeT) : Option[(DotGraph, DotNodeStmt)] = {
+	    Some(root, DotNodeStmt(node.toString, Seq.empty[DotAttr]))
+	  }
+	  
+	  val dot = graph.toDot(root, edgeTransformer, iNodeTransformer=Some(iNodeTransformer))
 	  dot
 	}
   
