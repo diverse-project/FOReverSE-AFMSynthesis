@@ -18,6 +18,13 @@ import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.MutexGraph
 import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.AttributeValue
+import scala.io.Source
+import java.nio.file.Files
+import java.io.File
+import java.io.FileWriter
+import com.github.tototoshi.csv.CSVWriter
+import java.io.InputStream
+import scala.sys.process._
 
 class AFMSynthesizer {
   
@@ -25,13 +32,17 @@ class AFMSynthesizer {
 	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
 	  
 	  
-	  val domains = extractDomains(matrix, knowledge)
+	  // Extract the features, the attributes and their domains
+	  val columnDomains = extractColumnDomains(matrix, knowledge)
 	  
 	  println("Domains")
-	  domains.foreach(d => println(d._1 + " => " + d._2))
+	  columnDomains.foreach(d => println(d._1 + " => " + d._2))
 	  println
 	  
-	  val (features, attributes) = extractFeaturesAndAttributes(matrix, domains, knowledge)
+	  val (features, attributes) = extractFeaturesAndAttributes(matrix, columnDomains, knowledge)
+	  val domains = (for (attribute <- attributes) yield {
+	    (attribute.name -> attribute.domain)
+	  }).toMap
 	  
 	  println("Features")
 	  features.foreach(println)
@@ -41,12 +52,13 @@ class AFMSynthesizer {
 	  attributes.foreach(println)
 	  println
 	  
-	  
-	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, domains)
+	  // Compute binary implications
+	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains)
 	  println("Constraints")
 	  constraints.foreach(println)
 	  println
 	  
+	  // Define the hierarchy
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
 	  println("BIG")
 	  println(big.toDot)
@@ -59,6 +71,14 @@ class AFMSynthesizer {
 	  
 	  val hierarchy = extractHierarchy(big, knowledge)
 	  
+	  placeAttributes(features, attributes, constraints, knowledge)
+	  
+	  // Compute the variability information
+	  
+	  
+	  // Compute constraints
+	  
+	  // Create the attributed feature model
 	  val root = new Feature("root", Nil, None, Nil)
 	  val afd = new AttributedFeatureDiagram(features, root, Nil, Nil)
 	  val phi = new CrossTreeConstraint
@@ -69,25 +89,17 @@ class AFMSynthesizer {
 	/**
 	 * Extract domains of columns from the matrix
 	 */
-	def extractDomains(matrix : ConfigurationMatrix, knowledge : Knowledge) : Map[String, Domain] = {
+	def extractColumnDomains(matrix : ConfigurationMatrix, knowledge : Knowledge) : Map[String, Set[String]] = {
 	  
-	  val domains : collection.mutable.Map[String, Domain] = collection.mutable.Map.empty
+	  val domains = collection.mutable.Map.empty[String, Set[String]]
 		
-	  for (label <- matrix.labels.zipWithIndex) {
+	  for ((label, index) <- matrix.labels.zipWithIndex) {
 	    
 	    val values = (for (configuration <- matrix.configurations) yield {
-		  configuration(label._2)
+		  configuration(index)
 		}).toSet
 		
-		// FIXME : determine null value according to the knowledge
-		val nullValue = "" 
-		
-		// FIXME : determine (partial) order according to the knowledge
-		val inferior = (a : String, b : String) => false 
-		
-		val domain = new Domain(values, nullValue, inferior)
-		
-		domains += (label._1 -> domain)
+		domains += (label -> values)
 	  }
 	  
 	  domains.toMap
@@ -96,7 +108,7 @@ class AFMSynthesizer {
 	/**
 	 * Extract features and attributes from the matrix
 	 */
-	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Domain], knowledge : Knowledge) 
+	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Set[String]], knowledge : Knowledge) 
 	: (List[Feature], List[Attribute]) = {
 	  knowledge.extractFeaturesAndAttributes(matrix, domains)
 	}
@@ -104,7 +116,7 @@ class AFMSynthesizer {
 	/**
 	 * Compute binary implications between the values of the matrix's columns
 	 */
-	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], domains : Map[String, Domain])
+	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]])
 	: List[BinaryImplicationConstraint] = {
 
 	  // Create dictionary of matrix values
@@ -113,8 +125,14 @@ class AFMSynthesizer {
 	  for ((label, labelIndex) <- matrix.labels.zipWithIndex) yield {
 	    val dictionary : collection.mutable.Map[String, String] = collection.mutable.Map.empty
 
-	    val columnDomain = domains(label)
-	    val values = columnDomain.values.toList.sortWith(columnDomain.lessThan)
+	    val values = columnDomains(label)
+	    val attribute = attributes.find(_.name == label)
+	    val sortedValues = if (attribute.isDefined) {
+	      values.toList.sortWith(attribute.get.domain.lessThan)
+	    } else {
+	      values.toList
+	    }
+	    
 	    
 	    for ((value, valueIndex) <- values.zipWithIndex) {
 	    	dictionary += (value -> valueIndex.toString)
@@ -132,11 +150,30 @@ class AFMSynthesizer {
 	  
 	  val convertedMatrix = new ConfigurationMatrix(matrix.labels, convertedConfigurations)
 	  
-	  // Compute binary implication constraints with a prolog reasoner
-	  // TODO : run sicstus
+	  // Write converted matrix to CSV
+	  val tempFile = File.createTempFile("afmsynthesis_", ".csv")
+	  val writer = new CSVWriter(new FileWriter(tempFile))
+	  writer.writeRow(convertedMatrix.labels)
+	  convertedMatrix.configurations.foreach(writer.writeRow(_))
+	  writer.close()
+
+	  println(tempFile.getAbsolutePath())
 	  
-	    
-	  // Convert the output of the reasoner to a list of constraints over the features and attributes
+	  // Compute binary implication constraints with a prolog reasoner
+	  
+	  // Run sicstus reasoner
+	  val reasonerCommand = Seq("sicstus", "-l", "sicstus_reasoner/revfm.pl")
+	  val ioHandler = ProcessLogger(println, println)
+	  val commandResult = reasonerCommand ! ioHandler
+	  
+	  assert(commandResult == 0, {tempFile.delete(); "Something went wrong with Sicstus program"})
+
+	  // Delete converted matrix file
+	  tempFile.delete()
+
+	  
+	  // Read the output of the reasoner  
+	  // and convert it to a list of constraints over the features and attributes
 	  val invertedDictionaries = dictionaries.map((kv) => (kv._1 -> kv._2.map(_.swap)))
 	  // TODO : get back the original values
 	  // TODO : map the values to either features or attribute values
@@ -201,6 +238,9 @@ class AFMSynthesizer {
 
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, List[Feature]]
+	  for (attribute <- attributes) {
+	    legalPositions(attribute) = Nil
+	  }
 	  
 	  // If not f => a = 0d, then the feature f is a legal position for the attribute a 
 	  for (constraint <- constraints) {
@@ -209,7 +249,7 @@ class AFMSynthesizer {
 	        for (implied <- constraint.implies) {
 	          implied match {
 	            case AttributeValue(attribute, value) if attribute.domain.nullValue == value =>
-	              legalPositions += attribute -> (feature :: legalPositions.getOrElse(attribute, Nil))
+	              legalPositions(attribute) = feature :: legalPositions(attribute)
 	            case _ =>
 	          }
 	        }
@@ -224,5 +264,10 @@ class AFMSynthesizer {
 	  }
 
 	}
+	
+	def computeMandatoryFeatures(big : BinaryImplicationGraph) {
+	  
+	}
+	
 	
 }

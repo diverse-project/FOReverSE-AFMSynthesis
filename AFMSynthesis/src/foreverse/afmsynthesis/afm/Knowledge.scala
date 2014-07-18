@@ -7,17 +7,26 @@ import foreverse.afmsynthesis.algorithm.BinaryImplicationGraph
 
 class Knowledge {
 
-  def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Domain]) 
+  def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, columnDomains : Map[String, Set[String]]) 
   : (List[Feature], List[Attribute]) = {
     
 	  val features : ListBuffer[Feature] = ListBuffer.empty
 	  val attributes : ListBuffer[Attribute] = ListBuffer.empty
     
 	  for (label <- matrix.labels) {
-		val domain = domains(label)
-		if (domain.values.forall(v => v == "0" || v == "1")) {
+		val values = columnDomains(label)
+		if (values.forall(v => v == "0" || v == "1")) {
 		  features += new Feature(label)
 		} else {
+			
+		  // FIXME : determine null value
+		  val nullValue = "" 
+		    
+		  // FIXME : determine (partial) order
+		  val inferior = (a : String, b : String) => false
+		  
+		  val domain = new Domain(values, nullValue, inferior)
+		
 		  attributes += new Attribute(label, domain)
 		}
 	  }
@@ -34,6 +43,7 @@ class Knowledge {
   }
   
   def placeAttribute(attribute : Attribute, legalPositions : List[Feature]) : Feature = {
+    require(!legalPositions.isEmpty, "An attribute must have at least one possible place in the hierarchy")
     legalPositions.head
   }
   

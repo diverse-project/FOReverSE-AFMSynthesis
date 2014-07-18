@@ -40,6 +40,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  val dir = new File(INPUT_WIKI_DIR)
 	  println("----------------------------------");
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
+	    println(inputFile.getAbsolutePath())
 		  val matrix = parser.parse(inputFile.getAbsolutePath)
 		  val knowledge = new Knowledge
 		  synthesizer.synthesize(matrix, knowledge)
