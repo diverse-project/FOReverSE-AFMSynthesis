@@ -15,7 +15,7 @@ import foreverse.afmsynthesis.afm.AttributeValue
 import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.Value
 import foreverse.afmsynthesis.afm.FeatureValue
-import foreverse.afmsynthesis.afm.MutexGraph
+import foreverse.afmsynthesis.algorithm.MutexGraph
 import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.AttributeValue
 import scala.io.Source
@@ -32,7 +32,7 @@ import foreverse.afmsynthesis.afm.AttributeValue
 class AFMSynthesizer {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
+	def synthesize(rootName : String, matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
 	  
 	  
 	  // Extract the features, the attributes and their domains
@@ -47,7 +47,7 @@ class AFMSynthesizer {
 	    (attribute.name -> attribute.domain)
 	  }).toMap
 	  
-	  val root = new Feature("root", Nil, None, Nil)
+	  val root = new Feature(rootName, Nil, None, Nil)
 	  
 	  println("Features")
 	  features.foreach(println)
@@ -61,7 +61,7 @@ class AFMSynthesizer {
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains)
 	  println("Constraints")
 	  println(constraints.size)
-	  constraints.foreach(println)
+//	  constraints.foreach(println)
 	  println
 	  
 	  // Define the hierarchy
@@ -84,6 +84,11 @@ class AFMSynthesizer {
 	  val hierarchy = extractHierarchy(big, knowledge)
 	  
 	  placeAttributes(root, features, attributes, constraints, knowledge)
+	  
+	  println("Features with attributes")
+	  println(root)
+	  features.foreach(println)
+	  println
 	  
 	  // Compute the variability information
 	  
@@ -169,8 +174,6 @@ class AFMSynthesizer {
 	  convertedMatrix.configurations.foreach(writer.writeRow(_))
 	  writer.close()
 
-	  println(convertedMatrixFile.getAbsolutePath())
-	  
 	  // Compute binary implication constraints with a prolog reasoner
 	  
 	  // Run sicstus reasoner
@@ -185,7 +188,7 @@ class AFMSynthesizer {
 	      convertedMatrixFile.getAbsolutePath(), 
 	      "results.txt")
 	      
-	  val ioHandler = ProcessLogger(println, println)
+	  val ioHandler = ProcessLogger(_ => {}, _ => {})
 	  val commandResult = reasonerCommand ! ioHandler
 	  
 	  assert(commandResult == 0, {convertedMatrixFile.delete(); "Something went wrong with Sicstus program"})
@@ -210,7 +213,7 @@ class AFMSynthesizer {
 		    val impliedVariables = matcher.group(4).split(",").toList.filter(!_.isEmpty())
 		    val excludedVariables = matcher.group(5).split(",").toList.filter(!_.isEmpty())
 		    
-		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
+//		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
    
 		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries)
 	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))

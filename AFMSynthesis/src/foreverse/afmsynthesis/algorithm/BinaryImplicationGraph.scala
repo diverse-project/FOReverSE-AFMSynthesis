@@ -28,11 +28,11 @@ class BinaryImplicationGraph {// extends DefaultGraphImpl[Feature, DiEdge](Set.e
 	  val root = DotRootGraph(directed=true, id=None)
 	  def edgeTransformer(innerEdge: scalax.collection.Graph[Feature,DiEdge]#EdgeT): Option[(DotGraph,DotEdgeStmt)] = {
 		  val edge = innerEdge.edge
-		  Some(root, DotEdgeStmt(edge.from.toString, edge.to.toString))
+		  Some(root, DotEdgeStmt(edge.from.value.name, edge.to.value.name))
 	  }
 	  
 	  def iNodeTransformer(node : scalax.collection.Graph[Feature,DiEdge]#NodeT) : Option[(DotGraph, DotNodeStmt)] = {
-	    Some(root, DotNodeStmt(node.toString, Seq.empty[DotAttr]))
+	    Some(root, DotNodeStmt(node.value.name, Seq.empty[DotAttr]))
 	  }
 	  
 	  val dot = graph.toDot(root, edgeTransformer, iNodeTransformer=Some(iNodeTransformer))

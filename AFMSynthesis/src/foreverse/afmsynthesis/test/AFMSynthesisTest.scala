@@ -43,7 +43,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	    println(inputFile.getAbsolutePath())
 		  val matrix = parser.parse(inputFile.getAbsolutePath)
 		  val knowledge = new Knowledge
-		  synthesizer.synthesize(matrix, knowledge)
+		  synthesizer.synthesize(inputFile.getName().replace(".csv", ""), matrix, knowledge)
 		  println("----------------------------------");
 	  }
   }

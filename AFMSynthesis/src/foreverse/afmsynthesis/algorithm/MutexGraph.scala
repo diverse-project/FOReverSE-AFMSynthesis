@@ -1,9 +1,12 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.algorithm
 
 import scalax.collection.mutable.Graph
 import scalax.collection.GraphEdge._
 import scalax.collection.GraphPredef._
 import scalax.collection.io.dot._
+import foreverse.afmsynthesis.afm.Feature
+import scala.reflect.runtime.universe
+import scalax.collection.mutable.Graph.empty$default$2
 
 
 class MutexGraph {
@@ -27,11 +30,11 @@ class MutexGraph {
 	  val root = DotRootGraph(directed=false, id=None)
 	  def edgeTransformer(innerEdge: scalax.collection.Graph[Feature,UnDiEdge]#EdgeT): Option[(DotGraph,DotEdgeStmt)] = {
 		  val edge = innerEdge.edge
-		  Some(root, DotEdgeStmt(edge._1.toString, edge._2.toString)) 
+		  Some(root, DotEdgeStmt(edge._1.value.name, edge._2.value.name)) 
 	  }
 	  
 	   def iNodeTransformer(node : scalax.collection.Graph[Feature,UnDiEdge]#NodeT) : Option[(DotGraph, DotNodeStmt)] = {
-	    Some(root, DotNodeStmt(node.toString, Seq.empty[DotAttr]))
+	    Some(root, DotNodeStmt(node.value.name, Seq.empty[DotAttr]))
 	  }
 	  
 	  val dot = graph.toDot(root, edgeTransformer, iNodeTransformer=Some(iNodeTransformer))
