@@ -10,7 +10,7 @@ import foreverse.afmsynthesis.afm.Knowledge
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
-  val INPUT_WIKI_DIR = "input/wikipedia-pcms/"
+  val INPUT_DIR = "input/test-set/"
 
 
 //  "BeTTy" should "generate some models" in {
@@ -37,7 +37,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "It" should "work" in {
 	  val parser = new CSVConfigurationMatrixParser
 	  val synthesizer = new AFMSynthesizer
-	  val dir = new File(INPUT_WIKI_DIR)
+	  val dir = new File(INPUT_DIR)
 	  println("----------------------------------");
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
 	    println(inputFile.getAbsolutePath())

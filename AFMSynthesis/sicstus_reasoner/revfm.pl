@@ -4,6 +4,65 @@
 % Date = Oct. 2013 - version 1
 %        May  2014 - version 2
 %        June 2014 - version 3: generate constraints of the form X=u => Y in {v1,..,vn} and Y not in {w1,.., wp}
+%        July 2014 - version 4: external usage to read in configuration matrix
+
+:- use_module(library(clpfd)).
+:- use_module(library(random)).
+
+%:- clpfd:full_answer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% EXTERNAL USAGE:
+%
+% Ex:  sicstus -f -l revfm.pl --goal main. -a configuration_matrix.csv results.txt
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+main:-
+        prolog_flag(argv, [F_IN, F_OUT]),
+        analyse_file(csv, F_IN, MATRIX),
+        MATRIX = [M1|_],
+        create_lv(M1, LV),
+        revfm(LV, MATRIX, LTC),
+        write_results(F_OUT, LTC),
+        halt.
+
+
+% Ex: analyse_file(csv, 'configuration_matrix.csv', M).
+
+analyse_file(csv, F_IN, MATRIX):-
+        open(F_IN, read, STREAM),
+        skip_line(STREAM),
+        read_all(STREAM, MATRIX),
+        close(STREAM).
+
+read_all(S, []) :-
+        peek_char(S, end_of_file),
+        !.
+read_all(S, [M|Ms]) :-
+        read_line(S, CODES),
+        analyse_line(CODES, [], M),
+        !,
+        read_all(S, Ms).
+read_all(S, _) :-
+        write('Revfm exception: configuration file corrupted'). 
+
+analyse_line([], C, [M]):-
+        lists:reverse(C,CR),
+        name(M, CR).
+analyse_line([44|S], C, [M|Ms]) :-
+        lists:reverse(C,CR),
+        name(M, CR),
+        !,
+        analyse_line(S, [], Ms).
+analyse_line([N|S], C, M):-
+        analyse_line(S, [N|C], M).
+
+
+create_lv([], []).
+create_lv([_X|Xs], [_Y|Ys]) :-
+        create_lv(Xs, Ys).
+        
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,15 +80,6 @@
 %
 % 1sec for creating 10000 CTRS (ex: bench(100, 100, 20, CTR), bench(1000, 100, 20, CTR)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
-
-:- use_module(library(clpfd)).
-:- use_module(library(random)).
-
-%:- clpfd:full_answer.
 
 
 % revfm(+LV, +TABLE, -LTC)
@@ -51,7 +101,7 @@
 
 revfm(LV, TABLE, LTC) :-
         create_all_atts(LV, 1, LVV),       % LV is a list of attributed variables
-        table([LVV], TABLE),
+        clpfd:table([LVV], TABLE),
         W = 0,                             % W=1 : activate trace, W=0 : don't
         update_all_atts(LV),
         find_all_ltc(LV, W, LV, [], LTC).
