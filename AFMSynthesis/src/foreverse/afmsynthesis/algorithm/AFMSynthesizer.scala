@@ -61,7 +61,7 @@ class AFMSynthesizer {
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains)
 	  println("Constraints")
 	  println(constraints.size)
-//	  constraints.foreach(println)
+	  constraints.foreach(println)
 	  println
 	  
 	  // Define the hierarchy
@@ -210,7 +210,7 @@ class AFMSynthesizer {
 		    val impliedVariables = matcher.group(4).split(",").toList.filter(!_.isEmpty())
 		    val excludedVariables = matcher.group(5).split(",").toList.filter(!_.isEmpty())
 		    
-//		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
+		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
    
 		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries)
 	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))
@@ -271,13 +271,15 @@ class AFMSynthesizer {
 		  source = toFeatureValue(constraint.value)
 	      if source.isDefined && source.get.positive) {
 	    
-	   	  iterateOverPositiveValues(constraint.implies) {
-	   		  target => big.addEdge(source.get.feature, target.feature)
-	   	  }
-
-	   	  iterateOverPositiveValues(constraint.excludes) {
-	   		  target => mutexGraph.addEdge(source.get.feature, target.feature)
-	   	  }
+		  val impliedValues = constraint.implies.flatMap(toFeatureValue(_))
+		  if (impliedValues.size == 1 && impliedValues.head.positive) {
+		    big.addEdge(source.get.feature, impliedValues.head.feature)
+		  }
+		  
+		  val excludedValues = constraint.excludes.flatMap(toFeatureValue(_))
+		  if (excludedValues.size == 1 && excludedValues.head.positive) {
+		    mutexGraph.addEdge(source.get.feature, excludedValues.head.feature)
+		  }
 	  }
 	  
 	  (big, mutexGraph)
