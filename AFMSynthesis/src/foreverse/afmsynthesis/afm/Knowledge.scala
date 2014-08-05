@@ -5,6 +5,9 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ListBuffer
 import foreverse.afmsynthesis.algorithm.BinaryImplicationGraph
 import gsd.graph.ImplicationGraph
+import foreverse.ksynthesis.InteractiveFMSynthesizer
+import foreverse.ksynthesis.mst.OptimumBranchingFinder
+import foreverse.ksynthesis.mst.WeightedImplicationGraph
 
 class Knowledge {
 
@@ -38,9 +41,11 @@ class Knowledge {
 
   }
   
-  def selectHierarchy(big : ImplicationGraph[Feature]) {
-    // TODO : should we return something or directly assign the hierarchy in the features?
-    // TODO : select a hierarchy
+  def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
+    val hierarchyFinder = new OptimumBranchingFinder[Feature]
+    val wbig = new WeightedImplicationGraph[Feature](big)
+    hierarchyFinder.findOptimumBranching(wbig)
+    // FIXME : should we return something or directly assign the hierarchy in the features?
   }
   
   def placeAttribute(attribute : Attribute, legalPositions : List[Feature]) : Feature = {

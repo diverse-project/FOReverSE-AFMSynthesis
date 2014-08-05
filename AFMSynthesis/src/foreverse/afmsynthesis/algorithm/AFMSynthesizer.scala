@@ -58,23 +58,31 @@ class AFMSynthesizer {
 	  println
 	  
 	  // Define the hierarchy
-	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
+	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(root, features, constraints)
+	  
 	  println("BIG")
 	  println(big.toString())
 	  println
-	  val bigWriter = new FileWriter(new File("big.dot"))
+	  val bigWriter = new FileWriter(new File("output/big.dot"))
 	  bigWriter.write(big.toString())
 	  bigWriter.close()
 	  
 	  println("Mutex graph")
 	  println(mutexGraph.toDot)
 	  println
-	  val mtxWriter = new FileWriter(new File("mtx.dot"))
+	  val mtxWriter = new FileWriter(new File("output/mtx.dot"))
 	  mtxWriter.write(mutexGraph.toDot)
 	  mtxWriter.close()
 	  
 	  
 	  val hierarchy = extractHierarchy(big, knowledge)
+	  
+	  println("Hierarchy")
+	  println(hierarchy)
+	  println()
+	  val hWriter = new FileWriter(new File("output/h.dot"))
+	  hWriter.write(hierarchy.toString())
+	  hWriter.close()
 	  
 	  placeAttributes(root, features, attributes, constraints, knowledge)
 	  
@@ -161,7 +169,7 @@ class AFMSynthesizer {
 	  
 	  // Write converted matrix to CSV
 	  val convertedMatrixFile = //File.createTempFile("afmsynthesis_", ".csv")
-	    new File("convertedMatrix.csv")
+	    new File("output/convertedMatrix.csv")
 	  val writer = new CSVWriter(new FileWriter(convertedMatrixFile))
 	  writer.writeRow(convertedMatrix.labels)
 	  convertedMatrix.configurations.foreach(writer.writeRow(_))
@@ -179,7 +187,7 @@ class AFMSynthesizer {
 	      "main.", 
 	      "-a", 
 	      convertedMatrixFile.getAbsolutePath(), 
-	      "results.txt")
+	      "output/results.txt")
 	      
 	  val ioHandler = ProcessLogger(_ => {}, _ => {})
 	  val commandResult = reasonerCommand ! ioHandler
@@ -196,7 +204,7 @@ class AFMSynthesizer {
 	  
 	  val pattern = Pattern.compile("Feat(\\d+)\\s=\\s(\\d+)\\s=>\\sFeat(\\d+)\\sin\\s\\[(.*)\\]\\sand\\snot\\sin\\s\\[(.*)\\]")
 	  
-	  val constraints = for (line <- Source.fromFile("results.txt").getLines) yield {
+	  val constraints = for (line <- Source.fromFile("output/results.txt").getLines) yield {
 	    val matcher = pattern.matcher(line)
 	    if (matcher.matches()) {
 	    	
@@ -238,7 +246,7 @@ class AFMSynthesizer {
 	/**
 	 * Compute binary implication graph and mutex graph
 	 */
-	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
+	def computeBinaryImplicationAndMutexGraph(root : Feature, features : List[Feature], constraints : List[BinaryImplicationConstraint])
 	: (ImplicationGraph[Feature], MutexGraph) = {
 	  
 	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
@@ -266,6 +274,7 @@ class AFMSynthesizer {
 	  val mutexGraph = new MutexGraph
 	  mutexGraph.addNodes(features)
 	  
+	  
 	  for (constraint <- constraints;
 		  source = toFeatureValue(constraint.value)
 	      if source.isDefined && source.get.positive) {
@@ -280,6 +289,11 @@ class AFMSynthesizer {
 		    mutexGraph.addEdge(source.get.feature, excludedValues.head.feature)
 		  }
 	  }
+	  
+	  // Add root to implication graph
+	  big.addVertex(root)
+	  features.foreach(big.addEdge(_, root))
+	  // FIXME : add edges from root to mandatory features
 	  
 	  (big, mutexGraph)
 	}
