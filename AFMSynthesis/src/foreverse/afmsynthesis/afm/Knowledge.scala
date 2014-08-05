@@ -48,7 +48,7 @@ class Knowledge {
     // FIXME : should we return something or directly assign the hierarchy in the features?
   }
   
-  def placeAttribute(attribute : Attribute, legalPositions : List[Feature]) : Feature = {
+  def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
     require(!legalPositions.isEmpty, "An attribute must have at least one possible place in the hierarchy")
     legalPositions.head
   }

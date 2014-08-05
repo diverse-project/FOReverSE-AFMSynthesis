@@ -21,11 +21,13 @@ import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.Knowledge
 import foreverse.afmsynthesis.afm.Value
 import gsd.graph.ImplicationGraph
+import scala.collection.JavaConversions._
+import gsd.graph.DirectedCliqueFinder
 
 class AFMSynthesizer {
   
   
-	def synthesize(rootName : String, matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
 	  
 	  
 	  // Extract the features, the attributes and their domains
@@ -39,8 +41,6 @@ class AFMSynthesizer {
 	  val domains = (for (attribute <- attributes) yield {
 	    (attribute.name -> attribute.domain)
 	  }).toMap
-	  
-	  val root = new Feature(rootName, Nil, None, Nil)
 	  
 	  println("Features")
 	  features.foreach(println)
@@ -58,7 +58,7 @@ class AFMSynthesizer {
 	  println
 	  
 	  // Define the hierarchy
-	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(root, features, constraints)
+	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
 	  
 	  println("BIG")
 	  println(big.toString())
@@ -84,20 +84,20 @@ class AFMSynthesizer {
 	  hWriter.write(hierarchy.toString())
 	  hWriter.close()
 	  
-	  placeAttributes(root, features, attributes, constraints, knowledge)
+	  placeAttributes(features, attributes, constraints, knowledge)
 	  
 	  println("Features with attributes")
-	  println(root)
 	  features.foreach(println)
 	  println
 	  
 	  // Compute the variability information
-	  
+
+	  computeMandatoryFeatures(big, hierarchy)
 	  
 	  // Compute constraints
 	  
 	  // Create the attributed feature model
-	  val afd = new AttributedFeatureDiagram(features, root, Nil, Nil)
+	  val afd = new AttributedFeatureDiagram(features, hierarchy.roots().iterator().next(), Nil, Nil)
 	  val phi = new CrossTreeConstraint
 	  val afm = new AttributedFeatureModel(afd, phi)
 	  afm
@@ -246,7 +246,7 @@ class AFMSynthesizer {
 	/**
 	 * Compute binary implication graph and mutex graph
 	 */
-	def computeBinaryImplicationAndMutexGraph(root : Feature, features : List[Feature], constraints : List[BinaryImplicationConstraint])
+	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
 	: (ImplicationGraph[Feature], MutexGraph) = {
 	  
 	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
@@ -290,10 +290,19 @@ class AFMSynthesizer {
 		  }
 	  }
 	  
-	  // Add root to implication graph
-	  big.addVertex(root)
-	  features.foreach(big.addEdge(_, root))
-	  // FIXME : add edges from root to mandatory features
+//	  // Add root to implication graph
+//	  val topCliques = big.reduceCliques().roots()
+//	  
+//	  big.addVertex(root)
+//	  features.foreach(big.addEdge(_, root))
+//	  
+//	  // add edges from root to top features 
+//	  // which are mandatory because the root is not part of the matrix 
+//	  for (topClique <- topCliques;
+//	      topFeature <- topClique) {
+//		  big.addEdge(root, topFeature)
+//	  }
+	  
 	  
 	  (big, mutexGraph)
 	}
@@ -302,27 +311,27 @@ class AFMSynthesizer {
 	 * Extract a particular hierarchy for the AFM
 	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
 	 */
-	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : Knowledge) = {
-	  // TODO : define return type
+	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : Knowledge): ImplicationGraph[Feature] = {
 	  knowledge.selectHierarchy(big)
 	}
 	
-	def placeAttributes(root : Feature, features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImplicationConstraint], knowledge : Knowledge) = {
+	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImplicationConstraint], knowledge : Knowledge) = {
 
 	  // Compute legal positions for the attributes
-	  val legalPositions = collection.mutable.Map.empty[Attribute, List[Feature]]
+	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
 	  for (attribute <- attributes) {
-	    legalPositions(attribute) = List(root)
+	    legalPositions(attribute) = features.toSet
 	  }
 	  
-	  // If not f => a = 0d, then the feature f is a legal position for the attribute a 
+	  // If (not f => a = 0d), then the feature f is a legal position for the attribute a
+	  
 	  for (constraint <- constraints) {
 	    constraint.value match {
-	      case FeatureValue(feature, positive) if !positive =>
+	      case FeatureValue(feature, positive) if !positive=>
 	        for (implied <- constraint.implies) {
 	          implied match {
 	            case AttributeValue(attribute, value) if attribute.domain.nullValue == value =>
-	              legalPositions(attribute) = feature :: legalPositions(attribute)
+	              legalPositions(attribute) = legalPositions(attribute) - feature
 	            case _ =>
 	          }
 	        }
@@ -338,8 +347,16 @@ class AFMSynthesizer {
 
 	}
 	
-	def computeMandatoryFeatures(big : BinaryImplicationGraph) {
-	  
+	def computeMandatoryFeatures(big : ImplicationGraph[Feature], hierarchy : ImplicationGraph[Feature]) {
+	  for (edge <- hierarchy.edges()) {
+	    val child = hierarchy.getSource(edge)
+		val parent = hierarchy.getTarget(edge)
+		
+		if (Option(big.findEdge(parent, child)).isDefined) {
+		  // TODO : set child feature as mandatory
+		  println(child + " is mandatory")
+		}
+	  }
 	}
 	
 	
