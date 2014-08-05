@@ -4,6 +4,7 @@ import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ListBuffer
 import foreverse.afmsynthesis.algorithm.BinaryImplicationGraph
+import gsd.graph.ImplicationGraph
 
 class Knowledge {
 
@@ -37,7 +38,7 @@ class Knowledge {
 
   }
   
-  def selectHierarchy(big : BinaryImplicationGraph) {
+  def selectHierarchy(big : ImplicationGraph[Feature]) {
     // TODO : should we return something or directly assign the hierarchy in the features?
     // TODO : select a hierarchy
   }

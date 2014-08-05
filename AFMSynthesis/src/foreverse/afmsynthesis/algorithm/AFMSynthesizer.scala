@@ -1,33 +1,26 @@
 package foreverse.afmsynthesis.algorithm
 
-import scala.Array.canBuildFrom
-import foreverse.afmsynthesis.afm.Attribute
-import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
-import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.CrossTreeConstraint
-import foreverse.afmsynthesis.afm.Domain
-import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.Knowledge
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.FeatureValue
-import foreverse.afmsynthesis.afm.AttributeValue
-import foreverse.afmsynthesis.afm.FeatureValue
-import foreverse.afmsynthesis.afm.Value
-import foreverse.afmsynthesis.afm.FeatureValue
-import foreverse.afmsynthesis.algorithm.MutexGraph
-import foreverse.afmsynthesis.afm.FeatureValue
-import foreverse.afmsynthesis.afm.AttributeValue
-import scala.io.Source
-import java.nio.file.Files
 import java.io.File
 import java.io.FileWriter
-import com.github.tototoshi.csv.CSVWriter
-import java.io.InputStream
-import scala.sys.process._
 import java.util.regex.Pattern
+import scala.Array.canBuildFrom
+import scala.Option.option2Iterable
+import scala.collection.TraversableOnce.flattenTraversableOnce
+import scala.io.Source
+import scala.sys.process.ProcessLogger
+import scala.sys.process.stringSeqToProcess
+import com.github.tototoshi.csv.CSVWriter
+import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.AttributeValue
-import foreverse.afmsynthesis.afm.AttributeValue
+import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
+import foreverse.afmsynthesis.afm.AttributedFeatureModel
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.CrossTreeConstraint
+import foreverse.afmsynthesis.afm.Feature
+import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.Knowledge
+import foreverse.afmsynthesis.afm.Value
+import gsd.graph.ImplicationGraph
 
 class AFMSynthesizer {
   
@@ -67,10 +60,10 @@ class AFMSynthesizer {
 	  // Define the hierarchy
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
 	  println("BIG")
-	  println(big.toDot)
+	  println(big.toString())
 	  println
 	  val bigWriter = new FileWriter(new File("big.dot"))
-	  bigWriter.write(big.toDot)
+	  bigWriter.write(big.toString())
 	  bigWriter.close()
 	  
 	  println("Mutex graph")
@@ -246,7 +239,7 @@ class AFMSynthesizer {
 	 * Compute binary implication graph and mutex graph
 	 */
 	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
-	: (BinaryImplicationGraph, MutexGraph) = {
+	: (ImplicationGraph[Feature], MutexGraph) = {
 	  
 	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
 	    value match {
@@ -264,8 +257,11 @@ class AFMSynthesizer {
 	     }
 	  }
 	  
-	  val big = new BinaryImplicationGraph
-	  big.addNodes(features)
+//	  val big = new BinaryImplicationGraph
+//	  big.addNodes(features)
+	  
+	  val big = new ImplicationGraph[Feature]
+	  features.foreach(big.addVertex(_))
 	  
 	  val mutexGraph = new MutexGraph
 	  mutexGraph.addNodes(features)
@@ -292,7 +288,7 @@ class AFMSynthesizer {
 	 * Extract a particular hierarchy for the AFM
 	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
 	 */
-	def extractHierarchy(big : BinaryImplicationGraph, knowledge : Knowledge) = {
+	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : Knowledge) = {
 	  // TODO : define return type
 	  knowledge.selectHierarchy(big)
 	}
