@@ -39,6 +39,10 @@ import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.XorGroup
+import dk.itu.fms.formula.dnf.DNF
+import dk.itu.fms.formula.dnf.DNFClause
+import foreverse.afmsynthesis.afm.OrGroup
+import foreverse.afmsynthesis.afm.OrGroup
 
 class AFMSynthesizer {
   
@@ -106,7 +110,7 @@ class AFMSynthesizer {
 	  features.foreach(println)
 	  println
 	  
-	  // Compute the variability information
+	  // Compute variability information
 
 	  val mandatoryRelations = computeMandatoryFeatures(big, hierarchy)
 	  
@@ -132,7 +136,8 @@ class AFMSynthesizer {
 	  // Compute constraints
 	  
 	  // Create the attributed feature model
-	  val afd = new AttributedFeatureDiagram(features, hierarchy.roots().iterator().next(), Nil, Nil)
+	  val root = hierarchy.roots().iterator().next()
+	  val afd = new AttributedFeatureDiagram(features, root, Nil, Nil)
 	  val phi = new CrossTreeConstraint
 	  val afm = new AttributedFeatureModel(afd, phi)
 	  afm
@@ -406,7 +411,7 @@ class AFMSynthesizer {
 	  val cliques = new ExclusionGraphUtil[Feature].cliques(mutexGraph)
 	  for (parent <- features; clique <- cliques) {
 	    val children = clique intersect hierarchy.children(parent)
-	    if (!children.isEmpty) {
+	    if (children.size >= 2) {
 	      mutexGroups += MutexGroup(parent, children.toList)
 	    }
 	  }
@@ -417,8 +422,52 @@ class AFMSynthesizer {
 	
 	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature]) 
 	: List[OrGroup] = {
-	  // TODO : compute or groups
-	  Nil
+	  
+	  // Convert matrix to DNF
+	  val variables = features.map(feature => matrix.labels.indexOf(feature.name))  
+	  
+	  val clauses = for (configuration <- matrix.configurations) yield {
+		  val clause = new Array[Int](variables.size)
+		  for ((variable, index) <- variables.zipWithIndex) {
+			  val value = configuration(variable) // FIXME : convert string of the matrix to boolean
+			  
+			  // a literal must not be equal to 0
+			  val literal = if (value == "1") {
+			    variable + 1
+			  }  else {
+			    - (variable + 1)
+			  }
+			  clause(index) = literal
+		  }
+
+		  new DNFClause(clause)
+	  }
+	  
+	  val dnf = new DNF(clauses)
+	  
+	  // Compute Or groups
+	  val orGroups = ListBuffer.empty[OrGroup]
+	  for (variable <- variables) {
+	    val computedOrGroups = dnf.getOrGroups(variable)
+	    
+	    for (orGroup <- computedOrGroups) {
+	      val literals = orGroup.getLiterals()
+	      val children = for (literal <- literals) yield {
+	        val label = matrix.labels(literal.toInt.abs - 1)
+	        val feature = features.find(_.name == label).get
+	        feature
+	      }
+	      val parent = features.find(_.name == matrix.labels(variable)).get
+	      
+	      // Filter groups that are not possible with this hierarchy
+	      if (hierarchy.children(parent).containsAll(children)) {
+	    	  orGroups += OrGroup(parent, children.toList)
+	      }
+	      
+	    }
+	  }
+ 
+	  orGroups.toList
 	}
 	
 	def computeXOrGroups(mutexGroups : List[MutexGroup], orGroups : List[OrGroup]) : List[XorGroup] = {

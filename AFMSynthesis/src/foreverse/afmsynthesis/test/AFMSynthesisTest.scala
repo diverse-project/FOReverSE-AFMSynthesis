@@ -50,30 +50,6 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		  println("----------------------------------");
 	  }
   }
-  
-//  "AFMSynthesizer" should "synthesize an AFM from a product list" in {
-//	  val synthesizer = new AFMSynthesizer
-//	  val parser = new CSVProductListParser
-//	  
-//	  val dir = new File(INPUT_WIKI_DIR)
-//	  for (inputMatrix <- dir.listFiles() if inputMatrix.getName.endsWith(".csv")) {
-//		println(inputMatrix)
-//	    val productList = parser.parse(inputMatrix.getAbsolutePath)
-//	    println(productList.variationPoints.size)
-//	    val synthesisProblem = new SATProductListSolver(productList)
-//	    val afm = synthesizer.synthesize(synthesisProblem)
-//	    println(afm.diagram.features.size)
-//	  }
-//	  	  
-//	  
-//  }
-  
-//  "Prolog reasoner" should "run an external prolog program" in {
-//  	  System.load((new File("lib/libsprt4-3-0.so")).getAbsolutePath())
-//	  System.load((new File("lib/libspnative.so")).getAbsolutePath())
-//
-//	  val sp = new SICStus
-//
-//  }
+ 
   
 }
