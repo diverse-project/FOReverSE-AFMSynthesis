@@ -23,6 +23,16 @@ import foreverse.afmsynthesis.afm.Value
 import gsd.graph.ImplicationGraph
 import scala.collection.JavaConversions._
 import gsd.graph.DirectedCliqueFinder
+import gsd.fms.sat.MutexGroupFinder
+import fr.familiar.fm.converter.ExclusionGraph
+import gsd.graph.GraphvizGraph
+import gsd.graph.SimpleEdge
+import gsd.graph.BasicGraph
+import fr.familiar.operations.ExclusionGraphUtil
+import scala.collection.mutable.ListBuffer
+import foreverse.afmsynthesis.afm.MutexGroup
+import foreverse.afmsynthesis.afm.MutexGroup
+import foreverse.afmsynthesis.afm.Mandatory
 
 class AFMSynthesizer {
   
@@ -68,11 +78,11 @@ class AFMSynthesizer {
 	  bigWriter.close()
 	  
 	  println("Mutex graph")
-	  println(mutexGraph.toDot)
+	  println(mutexGraph)
 	  println
-	  val mtxWriter = new FileWriter(new File("output/mtx.dot"))
-	  mtxWriter.write(mutexGraph.toDot)
-	  mtxWriter.close()
+//	  val mtxWriter = new FileWriter(new File("output/mtx.dot"))
+//	  mtxWriter.write(mutexGraph.toString())
+//	  mtxWriter.close()
 	  
 	  
 	  val hierarchy = extractHierarchy(big, knowledge)
@@ -92,7 +102,16 @@ class AFMSynthesizer {
 	  
 	  // Compute the variability information
 
-	  computeMandatoryFeatures(big, hierarchy)
+	  val mandatoryRelations = computeMandatoryFeatures(big, hierarchy)
+	  
+	  println("Mandatory relations")
+	  mandatoryRelations.foreach(println)
+	  println()
+	  
+	  val mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
+	  println("Mutex groups")
+	  mutexGroups.foreach(println)
+	  println()
 	  
 	  // Compute constraints
 	  
@@ -247,7 +266,7 @@ class AFMSynthesizer {
 	 * Compute binary implication graph and mutex graph
 	 */
 	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
-	: (ImplicationGraph[Feature], MutexGraph) = {
+	: (ImplicationGraph[Feature], ExclusionGraph[Feature]) = {
 	  
 	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
 	    value match {
@@ -271,9 +290,11 @@ class AFMSynthesizer {
 	  val big = new ImplicationGraph[Feature]
 	  features.foreach(big.addVertex(_))
 	  
-	  val mutexGraph = new MutexGraph
-	  mutexGraph.addNodes(features)
+//	  val mutexGraph = new MutexGraph
+//	  mutexGraph.addNodes(features)
 	  
+	  val mutexGraph = new ExclusionGraph[Feature]
+	  features.foreach(mutexGraph.addVertex(_))
 	  
 	  for (constraint <- constraints;
 		  source = toFeatureValue(constraint.value)
@@ -324,7 +345,7 @@ class AFMSynthesizer {
 	  }
 	  
 	  // If (not f => a = 0d), then the feature f is a legal position for the attribute a
-	  
+	  // here we check the negation of this property to remove illegal positions
 	  for (constraint <- constraints) {
 	    constraint.value match {
 	      case FeatureValue(feature, positive) if !positive=>
@@ -347,16 +368,34 @@ class AFMSynthesizer {
 
 	}
 	
-	def computeMandatoryFeatures(big : ImplicationGraph[Feature], hierarchy : ImplicationGraph[Feature]) {
+	def computeMandatoryFeatures(big : ImplicationGraph[Feature], hierarchy : ImplicationGraph[Feature])
+	: List[Mandatory] = {
+	  val mandatoryRelations = ListBuffer.empty[Mandatory]
+	  
 	  for (edge <- hierarchy.edges()) {
 	    val child = hierarchy.getSource(edge)
 		val parent = hierarchy.getTarget(edge)
 		
 		if (Option(big.findEdge(parent, child)).isDefined) {
-		  // TODO : set child feature as mandatory
-		  println(child + " is mandatory")
+		  mandatoryRelations += Mandatory(parent, child)
 		}
 	  }
+	  
+	  mandatoryRelations.toList
+	}
+	
+	def computeMutexGroups(mutexGraph : ExclusionGraph[Feature], hierarchy : ImplicationGraph[Feature], features : List[Feature])
+	: List[MutexGroup] = {
+	  val mutexGroups = ListBuffer.empty[MutexGroup]
+	  val cliques = new ExclusionGraphUtil[Feature].cliques(mutexGraph)
+	  for (parent <- features; clique <- cliques) {
+	    val children = clique intersect hierarchy.children(parent)
+	    if (!children.isEmpty) {
+	      mutexGroups += MutexGroup(parent, children.toList)
+	    }
+	  }
+	  
+	  mutexGroups.toList
 	}
 	
 	

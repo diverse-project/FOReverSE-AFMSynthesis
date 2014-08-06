@@ -45,7 +45,6 @@ class Knowledge {
     val hierarchyFinder = new OptimumBranchingFinder[Feature]
     val wbig = new WeightedImplicationGraph[Feature](big)
     hierarchyFinder.findOptimumBranching(wbig)
-    // FIXME : should we return something or directly assign the hierarchy in the features?
   }
   
   def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
