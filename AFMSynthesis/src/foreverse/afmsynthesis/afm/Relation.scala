@@ -1,13 +1,13 @@
 package foreverse.afmsynthesis.afm
 
-abstract class Relation(parent : Feature, children : List[Feature])
+abstract class Relation(val parent : Feature, val children : Set[Feature])
 
-case class Optional(parent : Feature, child : Feature) extends Relation(parent, List(child))
-case class Mandatory(parent : Feature, child : Feature) extends Relation(parent, List(child))
-case class MutexGroup(parent : Feature, children : List[Feature]) extends Relation(parent, children) {
+case class Optional(initParent : Feature, child : Feature) extends Relation(initParent, Set(child))
+case class Mandatory(initParent : Feature, child : Feature) extends Relation(initParent, Set(child))
+case class MutexGroup(initParent : Feature, initChildren : Set[Feature]) extends Relation(initParent, initChildren) {
   override def toString() = {
     "Mutex group : " + parent + " <- " + children.mkString("{", ",", "}")
   }
 }
-case class XorGroup(parent : Feature, children : List[Feature]) extends Relation(parent, children)
-case class OrGroup(parent : Feature, children : List[Feature]) extends Relation(parent, children)
+case class XorGroup(initParent : Feature, initChildren : Set[Feature]) extends Relation(initParent, initChildren)
+case class OrGroup(initParent : Feature, initChildren : Set[Feature]) extends Relation(initParent, initChildren)

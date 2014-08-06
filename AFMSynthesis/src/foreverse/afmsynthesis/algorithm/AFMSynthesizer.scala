@@ -43,6 +43,7 @@ import dk.itu.fms.formula.dnf.DNF
 import dk.itu.fms.formula.dnf.DNFClause
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.OrGroup
+import foreverse.afmsynthesis.afm.Relation
 
 class AFMSynthesizer {
   
@@ -118,20 +119,33 @@ class AFMSynthesizer {
 	  mandatoryRelations.foreach(println)
 	  println()
 	  
-	  val mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
+	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
+	  var orGroups = computeOrGroups(matrix, hierarchy, features)
+	  val xorGroups = computeXOrGroups(mutexGroups, orGroups)
+
+	  def existInXorGroups(group : Relation) : Boolean = {
+	    xorGroups.exists(xorGroup => 
+	      (group.parent == xorGroup.parent)
+	      && (group.children == xorGroup.children)
+	    )
+	  }
+	  
+	  // Remove xor groups from mutex and or groups to keep the AFM maximal
+	  mutexGroups = mutexGroups.filterNot(existInXorGroups(_))
+	  orGroups = orGroups.filterNot(existInXorGroups(_))
+	  
 	  println("Mutex groups")
 	  mutexGroups.foreach(println)
 	  println()
 	  
-	  val orGroups = computeOrGroups(matrix, hierarchy, features)
 	  println("Or groups")
 	  orGroups.foreach(println)
 	  println()
 	  
-	  val xorGroups = computeXOrGroups(mutexGroups, orGroups)
 	  println("XOr groups")
 	  xorGroups.foreach(println)
 	  println() 
+
 	  
 	  // Compute constraints
 	  
@@ -412,7 +426,7 @@ class AFMSynthesizer {
 	  for (parent <- features; clique <- cliques) {
 	    val children = clique intersect hierarchy.children(parent)
 	    if (children.size >= 2) {
-	      mutexGroups += MutexGroup(parent, children.toList)
+	      mutexGroups += MutexGroup(parent, children.toSet)
 	    }
 	  }
 	  
@@ -461,7 +475,7 @@ class AFMSynthesizer {
 	      
 	      // Filter groups that are not possible with this hierarchy
 	      if (hierarchy.children(parent).containsAll(children)) {
-	    	  orGroups += OrGroup(parent, children.toList)
+	    	  orGroups += OrGroup(parent, children.toSet)
 	      }
 	      
 	    }
