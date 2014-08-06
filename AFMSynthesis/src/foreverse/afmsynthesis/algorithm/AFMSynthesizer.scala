@@ -33,6 +33,12 @@ import scala.collection.mutable.ListBuffer
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.Mandatory
+import foreverse.afmsynthesis.afm.OrGroup
+import foreverse.afmsynthesis.afm.XorGroup
+import foreverse.afmsynthesis.afm.MutexGroup
+import foreverse.afmsynthesis.afm.OrGroup
+import foreverse.afmsynthesis.afm.XorGroup
+import foreverse.afmsynthesis.afm.XorGroup
 
 class AFMSynthesizer {
   
@@ -112,6 +118,16 @@ class AFMSynthesizer {
 	  println("Mutex groups")
 	  mutexGroups.foreach(println)
 	  println()
+	  
+	  val orGroups = computeOrGroups(matrix, hierarchy, features)
+	  println("Or groups")
+	  orGroups.foreach(println)
+	  println()
+	  
+	  val xorGroups = computeXOrGroups(mutexGroups, orGroups)
+	  println("XOr groups")
+	  xorGroups.foreach(println)
+	  println() 
 	  
 	  // Compute constraints
 	  
@@ -399,4 +415,22 @@ class AFMSynthesizer {
 	}
 	
 	
+	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature]) 
+	: List[OrGroup] = {
+	  // TODO : compute or groups
+	  Nil
+	}
+	
+	def computeXOrGroups(mutexGroups : List[MutexGroup], orGroups : List[OrGroup]) : List[XorGroup] = {
+	  val xorGroups = ListBuffer.empty[XorGroup]
+	
+	  for (mtxG <- mutexGroups) {
+	    val isOr = orGroups.exists(orG => mtxG.parent == orG.parent && mtxG.children == orG.children)
+	    if (isOr) {
+	      xorGroups += XorGroup(mtxG.parent, mtxG.children)
+	    }
+	  }
+	    
+	  xorGroups.toList
+	}
 }
