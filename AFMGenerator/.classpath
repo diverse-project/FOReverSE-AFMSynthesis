@@ -4,6 +4,12 @@
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/scalatest_2.10-2.1.0.jar"/>
-	<classpathentry kind="lib" path="lib/generators/BeTTy_AFM_generator.jar"/>
+	<classpathentry kind="lib" path="lib/BeTTy-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math-2.2.jar"/>
+	<classpathentry kind="lib" path="lib/FaMaAttributedModel-1.0.2.jar"/>
+	<classpathentry kind="lib" path="lib/FaMaFeatureModel-0.9.1.jar"/>
+	<classpathentry kind="lib" path="lib/FaMaSDK-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/javacsv.jar"/>
+	<classpathentry kind="lib" path="lib/antlr.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
