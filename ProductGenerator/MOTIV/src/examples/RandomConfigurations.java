@@ -111,18 +111,18 @@ public class RandomConfigurations {
 		
 		writer.write("\n");
 		
-		first = true;
-		for (String feature : features) {
-			if (first) {
-				first = false;
-			} else {
-				writer.write(",");
-			}
-			String type = types.get(feature);
-			writer.write(type);			
-		}
-
-		writer.write("\n");
+//		first = true;
+//		for (String feature : features) {
+//			if (first) {
+//				first = false;
+//			} else {
+//				writer.write(",");
+//			}
+//			String type = types.get(feature);
+//			writer.write(type);			
+//		}
+//
+//		writer.write("\n");
 		
 		for (Map<String, String> product : products) {
 			first = true;

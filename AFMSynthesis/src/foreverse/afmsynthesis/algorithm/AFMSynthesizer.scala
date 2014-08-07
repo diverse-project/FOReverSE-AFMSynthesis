@@ -149,9 +149,10 @@ class AFMSynthesizer {
 	  
 	  // Compute constraints
 	  
+	  val rc : List[CrossTreeConstraint] = Nil
+	  
 	  // Create the attributed feature model
-	  val root = hierarchy.roots().iterator().next()
-	  val afd = new AttributedFeatureDiagram(features, root, Nil, Nil)
+	  val afd = new AttributedFeatureDiagram(features, hierarchy, mandatoryRelations, mutexGroups, orGroups, xorGroups, rc)
 	  val phi = new CrossTreeConstraint
 	  val afm = new AttributedFeatureModel(afd, phi)
 	  afm

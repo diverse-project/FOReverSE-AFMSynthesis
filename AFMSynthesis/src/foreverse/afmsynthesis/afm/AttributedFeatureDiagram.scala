@@ -1,9 +1,14 @@
 package foreverse.afmsynthesis.afm
 
+import gsd.graph.ImplicationGraph
+
 class AttributedFeatureDiagram ( 
   val features : List[Feature],
-  val root : Feature,
-  val relations : List[Relation],
+  val hierarchy : ImplicationGraph[Feature],
+  val mandatoryRelations : List[Mandatory],
+  val mutexGroups : List[MutexGroup],
+  val orGroups : List[OrGroup],
+  val xorGroups : List[XorGroup],
   val constraints : List[CrossTreeConstraint]
 ) {
   

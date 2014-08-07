@@ -4,6 +4,10 @@ import org.scalatest.Matchers
 import org.scalatest.FlatSpec
 import examples.RandomConfigurations
 import java.io.File
+import choco.kernel.solver.ContradictionException
+import scala.concurrent._
+import scala.concurrent.duration._
+import ExecutionContext.Implicits.global
 
 class FAMAGenerator extends FlatSpec with Matchers {
 
@@ -13,12 +17,26 @@ class FAMAGenerator extends FlatSpec with Matchers {
 	  val productGenerator = new RandomConfigurations
 	  val modelsDir = new File(GENERATED_AFM_DIR)
 
-	  for (inputFile <- modelsDir.listFiles()) {
+	  for (inputFile <- modelsDir.listFiles() if inputFile.getName().endsWith(".afm")) {
 		  val inputName = inputFile.getName()
 		  val outputName = inputName.substring(0, inputName.length - 4) + ".csv"
 		  val outputFile = new File(GENERATED_AFM_DIR + outputName)
 		  println("Generating products for " + inputName)
-		  productGenerator.generateProducts(inputFile, outputFile)
+		  try {
+		    val generation : Future[Unit] = future {
+			  productGenerator.generateProducts(inputFile, outputFile)
+	  		}
+		  	Await.result(generation, 10.seconds)
+		  } catch {
+		    case e : ContradictionException => {
+		      println("contradiction")
+		      inputFile.delete()
+		    } 
+		    case e : TimeoutException => {
+		      println("timeout")
+		    } 
+		  }
+		  
 	  }
 	  
   }
