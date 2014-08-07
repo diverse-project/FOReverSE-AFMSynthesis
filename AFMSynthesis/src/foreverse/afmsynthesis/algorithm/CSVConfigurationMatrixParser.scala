@@ -15,15 +15,30 @@ class CSVConfigurationMatrixParser {
 		}
 		
 		val configurations : ListBuffer[Array[String]] = ListBuffer.empty
+		var nbConfigurations = 0
+		val start = System.currentTimeMillis()
+		
 		for (configuration <- reader) {
+		  
 		  if (dummyRoot) {
 		    configurations += "1" +: configuration.toArray
 		  } else {
 		    configurations += configuration.toArray
 		  }
+		  
+		  
+		  if (nbConfigurations > 0 && nbConfigurations%10000 == 0) {
+			  println(nbConfigurations + " configurations loaded")
+		  } 
+		  
+		  nbConfigurations += 1
 		}
+		
+		val stop = System.currentTimeMillis()
 		reader.close
-
+		
+		println(nbConfigurations + " configurations loaded in " + (stop - start) + "ms")
+		
 		new ConfigurationMatrix(labels.toArray, configurations.toList)
 	}
 }

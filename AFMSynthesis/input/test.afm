@@ -1,6 +1,0 @@
-%Relationships
-F0 : F1 [F2] [F3] ;
-F3 : [1,1] {F4 F5};
-
-%Attributes
-F3.cost : Integer[0 to 10], 0, 0;
