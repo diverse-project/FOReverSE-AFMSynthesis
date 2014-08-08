@@ -2,7 +2,7 @@ package foreverse.afmsynthesis.afm
 
 class AttributedFeatureModel(
 	val diagram : AttributedFeatureDiagram,
-	val constraint : CrossTreeConstraint
+	val constraint : Option[CrossTreeConstraint]
 ) {
 
   

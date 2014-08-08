@@ -1,8 +1,8 @@
 package foreverse.afmsynthesis.afm
 
-case class BinaryImplicationConstraint(
+case class BinaryExclusionConstraint(
     val feature : Feature, 
-    val implied : Feature)
+    val excluded : Feature)
     extends CrossTreeConstraint {
 
 }

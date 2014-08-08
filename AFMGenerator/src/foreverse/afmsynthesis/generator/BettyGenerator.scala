@@ -38,6 +38,7 @@ class BettyGenerator extends FlatSpec with Matchers {
       rangeEnd : Int, 
       nbAttributesPerFeature : Int) 
   : (FAMAAttributedFeatureModel, Long) = {
+    
 	  val characteristics = new AttributedCharacteristic()
 	   characteristics.setNumberOfFeatures(nbFeatures)
 	   characteristics.setPercentageCTC(percentageCTC)
@@ -58,7 +59,7 @@ class BettyGenerator extends FlatSpec with Matchers {
 	  val afmGenerator = new RandomAttributedFMGenerationTest
 	  for (i <- 0 until 10) {
 	    val generation : Future[(FAMAAttributedFeatureModel, Long)] = future {
-		  generateModel(5, 20, 50, 0, 3, 2)
+		  generateModel(50, 20, 5, 0, 3, 2)
 	  	}
 		
 	    val result = try {

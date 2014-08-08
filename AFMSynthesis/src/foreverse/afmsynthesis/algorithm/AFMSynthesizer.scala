@@ -14,7 +14,6 @@ import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.AttributeValue
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
 import foreverse.afmsynthesis.afm.CrossTreeConstraint
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.FeatureValue
@@ -44,6 +43,12 @@ import dk.itu.fms.formula.dnf.DNFClause
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.Relation
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.Mandatory
+import org.jgrapht.alg.TransitiveClosure
+import scala.collection.mutable.ListBuffer
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
 
 class AFMSynthesizer {
   
@@ -134,6 +139,8 @@ class AFMSynthesizer {
 	  mutexGroups = mutexGroups.filterNot(existInXorGroups(_))
 	  orGroups = orGroups.filterNot(existInXorGroups(_))
 	  
+	  // FIXME : remove overlaping groups with knowledge
+	  
 	  println("Mutex groups")
 	  mutexGroups.foreach(println)
 	  println()
@@ -148,12 +155,17 @@ class AFMSynthesizer {
 
 	  
 	  // Compute constraints
+	  val implies = computeCrossTreeImplications(hierarchy, big, mandatoryRelations)
 	  
-	  val rc : List[CrossTreeConstraint] = Nil
+	  val rc = implies
+	  
+	  println("Constraints")
+	  println(rc.size)
+	  println()
 	  
 	  // Create the attributed feature model
 	  val afd = new AttributedFeatureDiagram(features, hierarchy, mandatoryRelations, mutexGroups, orGroups, xorGroups, rc)
-	  val phi = new CrossTreeConstraint
+	  val phi = None
 	  val afm = new AttributedFeatureModel(afd, phi)
 	  afm
 	}
@@ -189,7 +201,7 @@ class AFMSynthesizer {
 	 * Compute binary implications between the values of the matrix's columns
 	 */
 	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]])
-	: List[BinaryImplicationConstraint] = {
+	: List[BinaryImpliesExcludesConstraint] = {
 
 	  // Create dictionary of matrix values
 	  val dictionaries : collection.mutable.Map[String, Map[String, String]] = collection.mutable.Map.empty
@@ -274,7 +286,7 @@ class AFMSynthesizer {
 		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries)
 	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))
 	    	val excludes = excludedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))
-		    val constraint = new BinaryImplicationConstraint(value, implies, excludes)
+		    val constraint = new BinaryImpliesExcludesConstraint(value, implies, excludes)
 	    	Some(constraint)
 	    } else {
 	    	println("Following line is not a correct output of Sicstus reasoner: " + line)
@@ -301,7 +313,7 @@ class AFMSynthesizer {
 	/**
 	 * Compute binary implication graph and mutex graph
 	 */
-	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImplicationConstraint])
+	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImpliesExcludesConstraint])
 	: (ImplicationGraph[Feature], ExclusionGraph[Feature]) = {
 	  
 	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
@@ -372,7 +384,7 @@ class AFMSynthesizer {
 	  knowledge.selectHierarchy(big)
 	}
 	
-	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImplicationConstraint], knowledge : Knowledge) = {
+	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImpliesExcludesConstraint], knowledge : Knowledge) = {
 
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
@@ -496,5 +508,37 @@ class AFMSynthesizer {
 	  }
 	    
 	  xorGroups.toList
+	}
+	
+	def computeCrossTreeImplications(hierarchy: ImplicationGraph[Feature], big : ImplicationGraph[Feature], mandatoryRelations : List[Mandatory]) 
+	: List[CrossTreeConstraint] = {
+	  
+	  // Compute represented implications by the hierarchy and the mandatory relations
+	  val representedImplications = new ImplicationGraph[Feature]
+	  hierarchy.vertices().foreach(representedImplications.addVertex(_))
+	  for (edge <- hierarchy.edges()) {
+		  val source = hierarchy.getEdgeSource(edge)
+		  val target = hierarchy.getEdgeTarget(edge)
+		  representedImplications.addEdge(source, target)
+	  }
+	  
+	  for (relation <- mandatoryRelations) {
+	    representedImplications.addEdge(relation.parent, relation.child)
+	  }
+	  
+	  TransitiveClosure.INSTANCE.closeSimpleDirectedGraph(representedImplications)
+	  
+	  // Create cross tree implications 
+	  val implies = ListBuffer.empty[BinaryImplicationConstraint]
+	  for (edge <- big.edges()) {
+		  val source = big.getEdgeSource(edge)
+		  val target = big.getEdgeTarget(edge)
+		  
+		  if (!Option(representedImplications.findEdge(source, target)).isDefined) {
+		    implies += BinaryImplicationConstraint(source, target)
+		  }
+	  }
+	  
+	  implies.toList
 	}
 }

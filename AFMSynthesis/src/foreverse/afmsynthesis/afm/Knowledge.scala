@@ -24,10 +24,18 @@ class Knowledge {
 		} else {
 			
 		  // FIXME : determine null value
-		  val nullValue = "" 
+		  val nullValue = "0" 
 		    
 		  // FIXME : determine (partial) order
-		  val inferior = (a : String, b : String) => false
+		  val inferior = (a : String, b : String) => {
+		    try {
+		      val intA = a.toInt
+		      val intB = b.toInt
+		      intA < intB
+		    } catch {
+		      case e : NumberFormatException => a < b 
+		    }
+		  }
 		  
 		  val domain = new Domain(values, nullValue, inferior)
 		
