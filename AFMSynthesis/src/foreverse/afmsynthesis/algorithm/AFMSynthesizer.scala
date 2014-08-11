@@ -40,6 +40,7 @@ import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.FeatureGroup
+import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
 
 class AFMSynthesizer {
   
@@ -144,6 +145,7 @@ class AFMSynthesizer {
 	  
 	  println("Constraints")
 	  println(rc.size)
+	  rc.foreach(println)
 	  println()
 	  
 	  // Create the attributed feature model
@@ -382,7 +384,7 @@ class AFMSynthesizer {
 	      case FeatureValue(feature, positive) if !positive=>
 	        for (implied <- constraint.implies) {
 	          implied match {
-	            case AttributeValue(attribute, value) if attribute.domain.nullValue == value =>
+	            case AttributeValue(attribute, value) if value != attribute.domain.nullValue =>
 	              legalPositions(attribute) = legalPositions(attribute) - feature
 	            case _ =>
 	          }
@@ -529,6 +531,7 @@ class AFMSynthesizer {
 	: List[BinaryExclusionConstraint] = {
 	  val excludes = ListBuffer.empty[BinaryExclusionConstraint]
 	  
+	  // Remove edges of mutex graph that are represented in mutex groups
 	  val crossTreeMutex = mutexGraph.clone().asInstanceOf[ExclusionGraph[Feature]]
 	  for (group <- (mutexGroups ::: xorGroups)) {
 	    for (f1 <- group.children;
@@ -536,6 +539,13 @@ class AFMSynthesizer {
 	    if f1 != f2) {
 	      crossTreeMutex.removeEdge(f1, f2)
 	    }
+	  }
+	  
+	  // Remaining edges are excludes cross tree constraints
+	  for (edge <- crossTreeMutex.edgeSet()) {
+	    val feature = crossTreeMutex.getEdgeSource(edge)
+	    val excluded = crossTreeMutex.getEdgeTarget(edge)
+	    excludes += new BinaryExclusionConstraint(feature, excluded)
 	  }
 	  
 	  excludes.toList

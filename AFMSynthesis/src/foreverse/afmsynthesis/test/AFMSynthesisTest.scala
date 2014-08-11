@@ -53,17 +53,35 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
   
   it should "be sound and complete" in {
-    val parser = new CSVConfigurationMatrixParser
+    val parser = new FastCSVConfigurationMatrixParser
     val inputDir = new File(GENERATED_DIR)
     
     for (inputFile <- inputDir.listFiles() if inputFile.getName().endsWith(".csv")) {
+      println(inputFile.getAbsolutePath())
+      
       val inputMatrix = parser.parse(inputFile.getAbsolutePath(), false)
       val outputMatrix = parser.parse(OUTPUT_DIR + inputFile.getName(), false)
       
-      println(inputMatrix.configurations.size)
-      println(outputMatrix.configurations.size)
+      // Create a dictionary to translate column positions between input and output matrices
+      val dictionary = collection.mutable.Map.empty[Int, Int]
+      for ((inLabel, inIndex) <- inputMatrix.labels.zipWithIndex) {
+        val (outLabel, outIndex) = outputMatrix.labels.zipWithIndex.find(_._1.endsWith(inLabel)).get
+        dictionary += inIndex -> outIndex
+      }
       
-      
+      // Check completeness of algorithm
+      for (inConfig <- inputMatrix.configurations) {
+        val outConfig = outputMatrix.configurations.find{ outConfig =>
+        	inConfig.zipWithIndex.forall(value => 
+        	  value._1 == outConfig(dictionary(value._2))
+        	)
+        }
+        
+        if (!outConfig.isDefined) {
+          println("not complete")
+          println(inConfig.mkString(","))
+        }
+      }
       
     }
   }
