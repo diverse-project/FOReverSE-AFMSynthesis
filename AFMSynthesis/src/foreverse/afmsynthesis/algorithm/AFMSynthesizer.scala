@@ -5,50 +5,41 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 import scala.Array.canBuildFrom
 import scala.Option.option2Iterable
+import scala.collection.JavaConversions.asScalaSet
+import scala.collection.JavaConversions.collectionAsScalaIterable
+import scala.collection.JavaConversions.mutableSetAsJavaSet
+import scala.collection.JavaConversions.seqAsJavaList
 import scala.collection.TraversableOnce.flattenTraversableOnce
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.sys.process.ProcessLogger
 import scala.sys.process.stringSeqToProcess
+import org.jgrapht.alg.TransitiveClosure
 import com.github.tototoshi.csv.CSVWriter
+import dk.itu.fms.formula.dnf.DNF
+import dk.itu.fms.formula.dnf.DNFClause
 import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.AttributeValue
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.CrossTreeConstraint
+import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
+import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.FeatureValue
 import foreverse.afmsynthesis.afm.Knowledge
-import foreverse.afmsynthesis.afm.Value
-import gsd.graph.ImplicationGraph
-import scala.collection.JavaConversions._
-import gsd.graph.DirectedCliqueFinder
-import gsd.fms.sat.MutexGroupFinder
-import fr.familiar.fm.converter.ExclusionGraph
-import gsd.graph.GraphvizGraph
-import gsd.graph.SimpleEdge
-import gsd.graph.BasicGraph
-import fr.familiar.operations.ExclusionGraphUtil
-import scala.collection.mutable.ListBuffer
-import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.Mandatory
-import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.XorGroup
-import foreverse.afmsynthesis.afm.XorGroup
-import dk.itu.fms.formula.dnf.DNF
-import dk.itu.fms.formula.dnf.DNFClause
-import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.Relation
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.Mandatory
-import org.jgrapht.alg.TransitiveClosure
-import scala.collection.mutable.ListBuffer
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.Value
+import foreverse.afmsynthesis.afm.XorGroup
+import fr.familiar.fm.converter.ExclusionGraph
+import fr.familiar.operations.ExclusionGraphUtil
+import gsd.graph.ImplicationGraph
+import foreverse.afmsynthesis.afm.MutexGroup
+import foreverse.afmsynthesis.afm.MutexGroup
+import foreverse.afmsynthesis.afm.OrGroup
+import foreverse.afmsynthesis.afm.FeatureGroup
 
 class AFMSynthesizer {
   
@@ -126,20 +117,12 @@ class AFMSynthesizer {
 	  
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
 	  var orGroups = computeOrGroups(matrix, hierarchy, features)
-	  val xorGroups = computeXOrGroups(mutexGroups, orGroups)
+	  var xorGroups = computeXOrGroups(mutexGroups, orGroups)
 
-	  def existInXorGroups(group : Relation) : Boolean = {
-	    xorGroups.exists(xorGroup => 
-	      (group.parent == xorGroup.parent)
-	      && (group.children == xorGroup.children)
-	    )
-	  }
-	  
-	  // Remove xor groups from mutex and or groups to keep the AFM maximal
-	  mutexGroups = mutexGroups.filterNot(existInXorGroups(_))
-	  orGroups = orGroups.filterNot(existInXorGroups(_))
-	  
-	  // FIXME : remove overlaping groups with knowledge
+	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
+	  mutexGroups = selectedGroups._1
+	  orGroups = selectedGroups._2
+	  xorGroups = selectedGroups._3
 	  
 	  println("Mutex groups")
 	  mutexGroups.foreach(println)
@@ -156,8 +139,8 @@ class AFMSynthesizer {
 	  
 	  // Compute constraints
 	  val implies = computeCrossTreeImplications(hierarchy, big, mandatoryRelations)
-	  
-	  val rc = implies
+	  val excludes = computeCrossTreeExcludes(mutexGraph, mutexGroups, xorGroups)
+	  val rc = implies ::: excludes
 	  
 	  println("Constraints")
 	  println(rc.size)
@@ -256,7 +239,7 @@ class AFMSynthesizer {
 	      convertedMatrixFile.getAbsolutePath(), 
 	      "output/results.txt")
 	      
-	  val ioHandler = ProcessLogger(_ => {}, _ => {})
+	  val ioHandler = ProcessLogger(stdout => {}, stderr => {})
 	  val commandResult = reasonerCommand ! ioHandler
 	  
 	  assert(commandResult == 0, {convertedMatrixFile.delete(); "Something went wrong with Sicstus program"})
@@ -511,7 +494,7 @@ class AFMSynthesizer {
 	}
 	
 	def computeCrossTreeImplications(hierarchy: ImplicationGraph[Feature], big : ImplicationGraph[Feature], mandatoryRelations : List[Mandatory]) 
-	: List[CrossTreeConstraint] = {
+	: List[BinaryImplicationConstraint] = {
 	  
 	  // Compute represented implications by the hierarchy and the mandatory relations
 	  val representedImplications = new ImplicationGraph[Feature]
@@ -540,5 +523,65 @@ class AFMSynthesizer {
 	  }
 	  
 	  implies.toList
+	}
+	
+	def computeCrossTreeExcludes(mutexGraph : ExclusionGraph[Feature], mutexGroups : List[MutexGroup], xorGroups : List[XorGroup])
+	: List[BinaryExclusionConstraint] = {
+	  val excludes = ListBuffer.empty[BinaryExclusionConstraint]
+	  
+	  val crossTreeMutex = mutexGraph.clone().asInstanceOf[ExclusionGraph[Feature]]
+	  for (group <- (mutexGroups ::: xorGroups)) {
+	    for (f1 <- group.children;
+	    f2 <- group.children
+	    if f1 != f2) {
+	      crossTreeMutex.removeEdge(f1, f2)
+	    }
+	  }
+	  
+	  excludes.toList
+	}
+	
+	def processOverlappingGroups(features : List[Feature], mutexGroups : List[MutexGroup], orGroups : List[OrGroup], xorGroups : List[XorGroup], knowledge : Knowledge)
+	: (List[MutexGroup], List[OrGroup], List[XorGroup]) = {
+	  val selectedMutex = collection.mutable.Set.empty[MutexGroup]
+	  val selectedOr = collection.mutable.Set.empty[OrGroup]
+	  val selectedXor = collection.mutable.Set.empty[XorGroup]
+	
+	  // Remove xor groups from mutex and or groups to keep the AFM maximal
+	  def existInXorGroups(group : Relation) : Boolean = {
+	    xorGroups.exists(xorGroup => 
+	      (group.parent == xorGroup.parent)
+	      && (group.children == xorGroup.children)
+	    )
+	  }
+	  selectedMutex ++= mutexGroups.filterNot(existInXorGroups(_))
+	  selectedOr ++= orGroups.filterNot(existInXorGroups(_))
+	  selectedXor ++= xorGroups
+	  
+	  // Select overlapping groups according to the knowledge
+	  val groups = collection.mutable.Set.empty[FeatureGroup]
+	  groups ++= selectedMutex
+	  groups ++= selectedOr
+	  groups ++= selectedXor
+
+	  for (feature <- features) {
+	    val groupsWithThisFeature = groups.filter(_.children.contains(feature))
+	    
+	    if (groupsWithThisFeature.size > 1) {
+	      val selectedGroup = knowledge.selectOneGroup(groupsWithThisFeature.toSet)
+
+	      // FIXME : we can try the unselected groups without the feature	      
+	      for (unselectedGroup <- groupsWithThisFeature if unselectedGroup != selectedGroup) {
+	    	  groups -= unselectedGroup
+	    	  unselectedGroup match {
+		        case g : MutexGroup => selectedMutex -= g
+		        case g : OrGroup => selectedOr -= g
+		        case g : XorGroup => selectedXor -= g
+		      }
+	      }
+	    }
+	  }
+
+	  (selectedMutex.toList, selectedOr.toList, selectedXor.toList)
 	}
 }

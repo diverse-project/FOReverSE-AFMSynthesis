@@ -60,4 +60,8 @@ class Knowledge {
     legalPositions.head
   }
   
+  def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {
+    overlappingGroups.head
+  }
+  
 }

@@ -13,6 +13,7 @@ import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.Optional
 import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
 
 class FAMAWriter {
 
@@ -123,6 +124,7 @@ class FAMAWriter {
     for (constraint <- afm.diagram.constraints) {
       val constraintString = constraint match {
         case BinaryImplicationConstraint(feature, implied) => feature.name + " REQUIRES " + implied.name
+        case BinaryExclusionConstraint(feature, excluded) => feature.name + " EXCLUDES " + excluded.name
         case _ => ""
       }
       

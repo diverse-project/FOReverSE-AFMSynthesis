@@ -12,6 +12,9 @@ import java.io.BufferedReader
 import java.io.FileReader
 import foreverse.afmsynthesis.algorithm.FastCSVConfigurationMatrixParser
 import foreverse.afmsynthesis.algorithm.FAMAWriter
+import scala.util.Random
+import foreverse.afmsynthesis.algorithm.CSVConfigurationMatrixWriter
+import foreverse.afmsynthesis.algorithm.CSVConfigurationMatrixParser
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -38,7 +41,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 
   }
 
-  "AFM synthesizer" should "synthesize AFM from the test set" in {
+  "AFM synthesis algorithm" should "synthesize AFM from the test set" in {
 	val dir = new File(INPUT_DIR)
 	synthesizeAFMFromDir(dir, true, _ => "root")
   }
@@ -46,9 +49,41 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   it should "synthesize AFM from randomly generated AFMs" in {
     val dir = new File(GENERATED_DIR)
-    synthesizeAFMFromDir(dir, false)
+    synthesizeAFMFromDir(dir, true)
   }
   
+  it should "be sound and complete" in {
+    val parser = new CSVConfigurationMatrixParser
+    val inputDir = new File(GENERATED_DIR)
+    
+    for (inputFile <- inputDir.listFiles() if inputFile.getName().endsWith(".csv")) {
+      val inputMatrix = parser.parse(inputFile.getAbsolutePath(), false)
+      val outputMatrix = parser.parse(OUTPUT_DIR + inputFile.getName(), false)
+      
+      println(inputMatrix.configurations.size)
+      println(outputMatrix.configurations.size)
+      
+      
+      
+    }
+  }
+  
+  "Random matrix generator" should "generate random matrices" in {
+    val nbMatrices = 1
+    val nbVariables = 10
+    val nbConfigurations = 10
+
+    val random = new Random
+    val writer = new CSVConfigurationMatrixWriter
+    
+    for (i <- 0 until nbMatrices) {
+    	val name = "Random_" + nbVariables + "_" + nbConfigurations + "_" + random.nextInt + ".csv"
+    	val matrix = RandomMatrixGenerator.generateMatrix(nbVariables, nbConfigurations)
+    	writer.writeToCSV(matrix, new File(GENERATED_DIR + name))
+    }
+    
+  }
  
+  
   
 }
