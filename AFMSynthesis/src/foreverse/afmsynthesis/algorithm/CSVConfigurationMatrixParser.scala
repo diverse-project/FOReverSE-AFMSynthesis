@@ -6,7 +6,7 @@ import com.github.tototoshi.csv.CSVReader
 
 class CSVConfigurationMatrixParser {
 
-	def parse(path : String, dummyRoot : Boolean = true, dummyRootName : String = "root") : ConfigurationMatrix = {
+	def parse(path : String, dummyRoot : Boolean = true, dummyRootName : String = "root", quiet : Boolean = false) : ConfigurationMatrix = {
 		val reader = CSVReader.open(path)
 
 		var labels = reader.readNext.getOrElse(Nil)
@@ -27,7 +27,7 @@ class CSVConfigurationMatrixParser {
 		  }
 		  
 		  
-		  if (nbConfigurations > 0 && nbConfigurations%10000 == 0) {
+		  if (!quiet && nbConfigurations > 0 && nbConfigurations%10000 == 0) {
 			  println(nbConfigurations + " configurations loaded")
 		  } 
 		  
@@ -37,7 +37,10 @@ class CSVConfigurationMatrixParser {
 		val stop = System.currentTimeMillis()
 		reader.close
 		
-		println(nbConfigurations + " configurations loaded in " + (stop - start) + "ms")
+		if (!quiet) {
+		  println(nbConfigurations + " configurations loaded in " + (stop - start) + "ms") 
+		}
+		
 		
 		new ConfigurationMatrix(labels.toArray, configurations.toList)
 	}

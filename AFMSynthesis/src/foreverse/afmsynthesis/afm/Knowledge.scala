@@ -52,6 +52,7 @@ class Knowledge {
   def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
     val hierarchyFinder = new OptimumBranchingFinder[Feature]
     val wbig = new WeightedImplicationGraph[Feature](big)
+    // TODO : if a feature is named "root", remove the necessary BIG edges to place it as the root of the AFM
     hierarchyFinder.findOptimumBranching(wbig)
   }
   
@@ -62,6 +63,10 @@ class Knowledge {
   
   def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {
     overlappingGroups.head
+  }
+  
+  def isTrue(feature : Feature, value : String) : Boolean = {
+    value == "1"
   }
   
 }

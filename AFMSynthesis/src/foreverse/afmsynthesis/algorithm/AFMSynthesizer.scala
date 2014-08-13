@@ -69,7 +69,7 @@ class AFMSynthesizer {
 	  println
 	  
 	  // Compute binary implications
-	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains)
+	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
 	  println("Constraints")
 	  println(constraints.size)
 //	  constraints.foreach(println)
@@ -117,7 +117,7 @@ class AFMSynthesizer {
 	  println()
 	  
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
-	  var orGroups = computeOrGroups(matrix, hierarchy, features)
+	  var orGroups = computeOrGroups(matrix, hierarchy, features, knowledge)
 	  var xorGroups = computeXOrGroups(mutexGroups, orGroups)
 
 	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
@@ -179,13 +179,20 @@ class AFMSynthesizer {
 	 */
 	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Set[String]], knowledge : Knowledge) 
 	: (List[Feature], List[Attribute]) = {
-	  knowledge.extractFeaturesAndAttributes(matrix, domains)
+	  // Separate features from attributes w.r.t. the knowledge
+	  val (features, attributes) = knowledge.extractFeaturesAndAttributes(matrix, domains)
+	  
+	  // Remove dead features
+	  val aliveFeatures = features.filter(feature => domains(feature.name).exists(knowledge.isTrue(feature, _)))
+	  // FIXME : remove corresponding column in matrix
+	  
+	  (aliveFeatures, attributes)
 	}
 
 	/**
 	 * Compute binary implications between the values of the matrix's columns
 	 */
-	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]])
+	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : Knowledge)
 	: List[BinaryImpliesExcludesConstraint] = {
 
 	  // Create dictionary of matrix values
@@ -268,9 +275,9 @@ class AFMSynthesizer {
 		    
 //		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
    
-		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries)
-	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))
-	    	val excludes = excludedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries))
+		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries, knowledge)
+	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries, knowledge))
+	    	val excludes = excludedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries, knowledge))
 		    val constraint = new BinaryImpliesExcludesConstraint(value, implies, excludes)
 	    	Some(constraint)
 	    } else {
@@ -282,13 +289,16 @@ class AFMSynthesizer {
 	  constraints.flatten.toList
 	}
 	
-	private def convertVariableToValue(label : String, value : String, features : List[Feature], attributes : List[Attribute], invertedDictionaries : collection.mutable.Map[String, Map[String, String]])
+	/**
+	 * Convert a cell to a feature or an attribute value depending on the nature of the column
+	 */
+	private def convertVariableToValue(label : String, value : String, features : List[Feature], attributes : List[Attribute], invertedDictionaries : collection.mutable.Map[String, Map[String, String]], knowledge : Knowledge)
 	: Value = {
 	  // FIXME : this conversion does not handle special case of implicit features (features not present in labels)
 	  val originValue = invertedDictionaries(label)(value)
 	  val feature = features.find(_.name == label)
 	  if (feature.isDefined) {
-		new FeatureValue(feature.get, originValue == "1") // FIXME : check that the string means true or false
+		new FeatureValue(feature.get, knowledge.isTrue(feature.get, originValue))
 	  } else {
 		val attribute = attributes.find(_.name == label)
 		new AttributeValue(attribute.get, originValue)
@@ -369,6 +379,9 @@ class AFMSynthesizer {
 	  knowledge.selectHierarchy(big)
 	}
 	
+	/**
+	 * Place attributes in features
+	 */
 	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImpliesExcludesConstraint], knowledge : Knowledge) = {
 
 	  // Compute legal positions for the attributes
@@ -401,6 +414,9 @@ class AFMSynthesizer {
 
 	}
 	
+	/**
+	 * Compute mandatory relations in the hierarchy
+	 */
 	def computeMandatoryFeatures(big : ImplicationGraph[Feature], hierarchy : ImplicationGraph[Feature])
 	: List[Mandatory] = {
 	  val mandatoryRelations = ListBuffer.empty[Mandatory]
@@ -417,6 +433,9 @@ class AFMSynthesizer {
 	  mandatoryRelations.toList
 	}
 	
+	/**
+	 * Compute all possible mutex groups
+	 */
 	def computeMutexGroups(mutexGraph : ExclusionGraph[Feature], hierarchy : ImplicationGraph[Feature], features : List[Feature])
 	: List[MutexGroup] = {
 	  val mutexGroups = ListBuffer.empty[MutexGroup]
@@ -432,7 +451,10 @@ class AFMSynthesizer {
 	}
 	
 	
-	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature]) 
+	/**
+	 * Compute all possible or groups
+	 */
+	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : Knowledge) 
 	: List[OrGroup] = {
 	  
 	  // Convert matrix to DNF
@@ -441,10 +463,10 @@ class AFMSynthesizer {
 	  val clauses = for (configuration <- matrix.configurations) yield {
 		  val clause = new Array[Int](variables.size)
 		  for ((variable, index) <- variables.zipWithIndex) {
-			  val value = configuration(variable) // FIXME : convert string of the matrix to boolean
+			  val valueIsTrue = knowledge.isTrue(features(variable), configuration(variable))
 			  
 			  // a literal must not be equal to 0
-			  val literal = if (value == "1") {
+			  val literal = if (valueIsTrue) {
 			    variable + 1
 			  }  else {
 			    - (variable + 1)
@@ -482,6 +504,9 @@ class AFMSynthesizer {
 	  orGroups.toList
 	}
 	
+	/**
+	 * Compute all possible Xor groups
+	 */
 	def computeXOrGroups(mutexGroups : List[MutexGroup], orGroups : List[OrGroup]) : List[XorGroup] = {
 	  val xorGroups = ListBuffer.empty[XorGroup]
 	
@@ -495,6 +520,9 @@ class AFMSynthesizer {
 	  xorGroups.toList
 	}
 	
+	/**
+	 * Compute cross tree binary implications between features
+	 */
 	def computeCrossTreeImplications(hierarchy: ImplicationGraph[Feature], big : ImplicationGraph[Feature], mandatoryRelations : List[Mandatory]) 
 	: List[BinaryImplicationConstraint] = {
 	  
@@ -527,6 +555,9 @@ class AFMSynthesizer {
 	  implies.toList
 	}
 	
+	/**
+	 * Compute cross tree binary exclusions between features
+	 */
 	def computeCrossTreeExcludes(mutexGraph : ExclusionGraph[Feature], mutexGroups : List[MutexGroup], xorGroups : List[XorGroup])
 	: List[BinaryExclusionConstraint] = {
 	  val excludes = ListBuffer.empty[BinaryExclusionConstraint]
@@ -551,6 +582,10 @@ class AFMSynthesizer {
 	  excludes.toList
 	}
 	
+	/**
+	 * Select non overlapping groups among mutex or and xor groups
+	 * Mutex and Or groups than are also Xor groups are discarded to keep the maximality of the AFM
+	 */
 	def processOverlappingGroups(features : List[Feature], mutexGroups : List[MutexGroup], orGroups : List[OrGroup], xorGroups : List[XorGroup], knowledge : Knowledge)
 	: (List[MutexGroup], List[OrGroup], List[XorGroup]) = {
 	  val selectedMutex = collection.mutable.Set.empty[MutexGroup]
@@ -574,13 +609,15 @@ class AFMSynthesizer {
 	  groups ++= selectedOr
 	  groups ++= selectedXor
 
+	  // FIXME : not really a good algorithm for selecting overlapping groups
+	  // because it depends on the order of the features
 	  for (feature <- features) {
 	    val groupsWithThisFeature = groups.filter(_.children.contains(feature))
 	    
 	    if (groupsWithThisFeature.size > 1) {
 	      val selectedGroup = knowledge.selectOneGroup(groupsWithThisFeature.toSet)
 
-	      // FIXME : we can try the unselected groups without the feature	      
+	      // FIXME : we can try to keep the unselected groups by removing the feature	      
 	      for (unselectedGroup <- groupsWithThisFeature if unselectedGroup != selectedGroup) {
 	    	  groups -= unselectedGroup
 	    	  unselectedGroup match {
