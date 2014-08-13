@@ -1,20 +1,24 @@
 package foreverse.afmsynthesis.generator
 
-import org.scalatest.Matchers
-import org.scalatest.FlatSpec
-import examples.RandomConfigurations
 import java.io.File
-import choco.kernel.solver.ContradictionException
-import scala.concurrent._
-import scala.concurrent.duration._
-import ExecutionContext.Implicits.global
-import fr.familiar.attributedfm.AttributedFeatureModel
-import scala.collection.JavaConversions._
+import java.io.FileWriter
+
+import scala.collection.JavaConversions.bufferAsJavaList
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.future
+
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+
+import choco.cp.solver.CPSolver
+import choco.kernel.solver.ContradictionException
 import es.us.isa.FAMA.parser.FMFParser
 import fr.familiar.attributedfm.reasoning.ChocoReasoner
-import choco.cp.solver.CPSolver
-import java.io.FileWriter
 
 class FAMAGenerator extends FlatSpec with Matchers {
 
