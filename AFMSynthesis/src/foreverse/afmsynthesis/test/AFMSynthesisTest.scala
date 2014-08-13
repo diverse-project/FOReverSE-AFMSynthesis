@@ -4,17 +4,19 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 import java.io.File
 import scala.io.Source
-import foreverse.afmsynthesis.algorithm.CSVConfigurationMatrixParser
+import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
 import foreverse.afmsynthesis.algorithm.AFMSynthesizer
 import foreverse.afmsynthesis.afm.Knowledge
 import com.github.tototoshi.csv.CSVReader
 import java.io.BufferedReader
 import java.io.FileReader
-import foreverse.afmsynthesis.algorithm.FastCSVConfigurationMatrixParser
-import foreverse.afmsynthesis.algorithm.FAMAWriter
+import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
+import foreverse.afmsynthesis.writer.FAMAWriter
 import scala.util.Random
-import foreverse.afmsynthesis.algorithm.CSVConfigurationMatrixWriter
-import foreverse.afmsynthesis.algorithm.CSVConfigurationMatrixParser
+import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
+import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
+import foreverse.afmsynthesis.writer.TextualFAMAWriter
+import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -25,7 +27,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   def synthesizeAFMFromDir(dir : File, dummyRoot : Boolean, rootName : String => String = _ => "root") {
 	  val parser = new FastCSVConfigurationMatrixParser
 	  val synthesizer = new AFMSynthesizer
-	  val writer = new FAMAWriter
+	  val writer = new ModelBasedFAMAWriter
 	  
 	  println("----------------------------------");
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
@@ -52,7 +54,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
     synthesizeAFMFromDir(dir, true)
   }
   
-  it should "be sound and complete" in {
+  it should "be complete" in {
     val parser = new FastCSVConfigurationMatrixParser
     val inputDir = new File(GENERATED_DIR)
     
@@ -83,8 +85,12 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	        	)
 	        }
 	        
-	        assert(outConfig.isDefined, inConfig.mkString(",") + " does not exist in output configurations")  
+	        assert(outConfig.isDefined, inConfig.mkString(",") + " does not exist in output configurations")
 	      }
+	      val nbInputConfigurations = inputMatrix.configurations.size 
+	      val nbOutputConfigurations = outputMatrix.configurations.size 
+	      val overApproximation = ((nbOutputConfigurations - nbInputConfigurations) * 100) / nbOutputConfigurations 
+	      println(overApproximation + "% of generated configurations do not exist in input matrix")
       
       } else {
         println("no configuration matrix for " + inputFile.getAbsolutePath())
