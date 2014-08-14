@@ -42,6 +42,7 @@ import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.FeatureGroup
 import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
 import foreverse.afmsynthesis.test.PerformanceMonitor
+import foreverse.afmsynthesis.afm.OrGroup
 
 class AFMSynthesizer extends PerformanceMonitor {
   
@@ -503,7 +504,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  val clauses = for (configuration <- matrix.configurations) yield {
 		  val clause = new Array[Int](variables.size)
 		  for ((variable, index) <- variables.zipWithIndex) {
-			  val valueIsTrue = knowledge.isTrue(features(variable), configuration(variable))
+			  val valueIsTrue = knowledge.isTrue(features(index), configuration(variable))
 			  
 			  // a literal must not be equal to 0
 			  val literal = if (valueIsTrue) {

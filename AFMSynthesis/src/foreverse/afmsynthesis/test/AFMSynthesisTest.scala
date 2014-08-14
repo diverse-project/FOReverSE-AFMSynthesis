@@ -107,7 +107,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   "Random matrix generator" should "generate random matrices" in {
     val nbMatrices = 10
-    val nbVariables = 100
+    val nbVariables = 20
     val nbConfigurations = 100
     val maximumDomainSize = 100
     

@@ -76,7 +76,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
         case OrGroup(_,_) => (1, relation.children.size)
         case XorGroup(_,_) => (1, 1) // FIXME : not working
       }
-      println(relation.parent + " / " + relation.children + " : " + cardInf + ", " + cardSup)
+//      println(relation.parent + " / " + relation.children + " : " + cardInf + ", " + cardSup)
       famaRelation.addCardinality(new Cardinality(cardInf, cardSup))
     }
     
