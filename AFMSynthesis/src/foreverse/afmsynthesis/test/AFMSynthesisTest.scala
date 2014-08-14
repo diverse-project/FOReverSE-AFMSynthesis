@@ -38,6 +38,12 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		val afm = synthesizer.synthesize(matrix, knowledge)
 		val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))
 		writer.write(afm, outputFile)
+		
+		println()
+		println("Performances")
+		for ((tag, time) <- synthesizer.getTimes) {
+		  println(tag + ": " + time + " ms")
+		}
 		println("----------------------------------");
 	  }
 
@@ -102,7 +108,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "Random matrix generator" should "generate random matrices" in {
     val nbMatrices = 10
     val nbVariables = 100
-    val nbConfigurations = 1000
+    val nbConfigurations = 100
     val maximumDomainSize = 100
     
     val random = new Random
@@ -115,23 +121,6 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
     }
     
   }
- 
-
-    it should "do what I want" in {
-    val nbMatrices = 1
-    val nbVariables = 100
-    val nbConfigurations = 200
-    val maximumDomainSize = 100
-
-    val random = new Random
-    val writer = new CSVConfigurationMatrixWriter
-    val synthesizer = new AFMSynthesizer
-    
-    for (i <- 0 until nbMatrices) {
-    	val matrix = RandomMatrixGenerator.generateMatrix(nbVariables, nbConfigurations, maximumDomainSize)
-    	synthesizer.synthesize(matrix, new Knowledge)
-    }
-    
-  }
+  
   
 }

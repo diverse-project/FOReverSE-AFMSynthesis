@@ -41,24 +41,30 @@ import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.FeatureGroup
 import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
+import foreverse.afmsynthesis.test.PerformanceMonitor
 
-class AFMSynthesizer {
+class AFMSynthesizer extends PerformanceMonitor {
   
   
 	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
-	  
+	  reset() // Reset performance monitor
+	  start("Synthesis")
 	  
 	  // Extract the features, the attributes and their domains
+	  start("Domain extraction")
 	  val columnDomains = extractColumnDomains(matrix, knowledge)
+	  stopLast()
 	  
 	  println("Domains")
 //	  columnDomains.foreach(d => println(d._1 + " => " + d._2))
-	  println
-	  
+//	  println
+	
+	  start("Feature and attribute extraction")
 	  val (features, attributes) = extractFeaturesAndAttributes(matrix, columnDomains, knowledge)
 	  val domains = (for (attribute <- attributes) yield {
 	    (attribute.name -> attribute.domain)
 	  }).toMap
+	  stopLast()
 	  
 	  println("Features")
 //	  features.foreach(println)
@@ -69,40 +75,46 @@ class AFMSynthesizer {
 	  println
 	  
 	  // Compute binary implications
+	  start("Binary implications")
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
+	  stopLast()
+	  
 	  println("Constraints")
 	  println(constraints.size)
 //	  constraints.foreach(println)
 	  println
 	  
 	  // Define the hierarchy
+	  start("Implication and Mutex graph")
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
+	  stopLast()
 	  
 	  println("BIG")
 //	  println(big.toString())
-	  println
+//	  println
 //	  val bigWriter = new FileWriter(new File("output/big.dot"))
 //	  bigWriter.write(big.toString())
 //	  bigWriter.close()
-//	  
+
 	  println("Mutex graph")
 //	  println(mutexGraph)
-	  println
-//	  val mtxWriter = new FileWriter(new File("output/mtx.dot"))
-//	  mtxWriter.write(mutexGraph.toString())
-//	  mtxWriter.close()
+//	  println
 	  
 	  
+	  start("Hierarchy")
 	  val hierarchy = extractHierarchy(big, knowledge)
+	  stopLast()
 	  
 	  println("Hierarchy")
 //	  println(hierarchy)
-	  println()
+//	  println()
 	  val hWriter = new FileWriter(new File("output/h.dot"))
 	  hWriter.write(hierarchy.toString())
 	  hWriter.close()
 	  
+	  start("Place attributes")
 	  placeAttributes(features, attributes, constraints, knowledge)
+	  stopLast()
 	  
 	  println("Features with attributes")
 //	  features.foreach(println)
@@ -110,20 +122,35 @@ class AFMSynthesizer {
 	  
 	  // Compute variability information
 
+	  start("Mandatory features")
 	  val mandatoryRelations = computeMandatoryFeatures(big, hierarchy)
+	  stopLast()
 	  
 	  println("Mandatory relations")
 	  mandatoryRelations.foreach(println)
 	  println()
 	  
+	  start("Feature groups")
+	  start("Mutex")
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
+	  stopLast()
+	  
+	  start("Or")
 	  var orGroups = computeOrGroups(matrix, hierarchy, features, knowledge)
+	  stopLast()
+	  
+	  start("Xor")
 	  var xorGroups = computeXOrGroups(mutexGroups, orGroups)
-
+	  stopLast()
+	  
+	  start("Group processing")
 	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
 	  mutexGroups = selectedGroups._1
 	  orGroups = selectedGroups._2
 	  xorGroups = selectedGroups._3
+	  stopLast()
+	  
+	  stopLast() // End feature group computation
 	  
 	  println("Mutex groups")
 	  mutexGroups.foreach(println)
@@ -136,12 +163,20 @@ class AFMSynthesizer {
 	  println("XOr groups")
 	  xorGroups.foreach(println)
 	  println() 
-
+	  
+	  
 	  
 	  // Compute constraints
+	  start("Cross tree constraints")
+	  start("Binary implies")
 	  val implies = computeCrossTreeImplications(hierarchy, big, mandatoryRelations)
+	  stopLast()
+	  
+	  start("Binary excludes")
 	  val excludes = computeCrossTreeExcludes(mutexGraph, mutexGroups, xorGroups)
+	  stopLast()
 	  val rc = implies ::: excludes
+	  stopLast()
 	  
 	  println("Constraints")
 	  println(rc.size)
@@ -149,9 +184,13 @@ class AFMSynthesizer {
 	  println()
 	  
 	  // Create the attributed feature model
+	  start("AFM construction")
 	  val afd = new AttributedFeatureDiagram(features, hierarchy, mandatoryRelations, mutexGroups, orGroups, xorGroups, rc)
 	  val phi = None
 	  val afm = new AttributedFeatureModel(afd, phi)
+	  stopLast()
+	  
+	  stopLast() // End synthesis
 	  afm
 	}
 
@@ -249,8 +288,9 @@ class AFMSynthesizer {
 	      "output/results.txt")
 	      
 	  val ioHandler = ProcessLogger(stdout => {}, stderr => {})
+	  start("Sicstus")
 	  val commandResult = reasonerCommand ! ioHandler
-	  
+	  stopLast()
 	  assert(commandResult == 0, {convertedMatrixFile.delete(); "Something went wrong with Sicstus program"})
 
 	  // Delete converted matrix file
