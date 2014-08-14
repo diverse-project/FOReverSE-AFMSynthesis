@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 
 object RandomMatrixGenerator {
 
-  def generateMatrix(nbVariables : Int, nbConfigurations : Int, seed : Option[Long] = None) 
+  def generateMatrix(nbVariables : Int, nbConfigurations : Int, maximumDomainSize : Int, seed : Option[Long] = None) 
   : ConfigurationMatrix = {
     val random = if (seed.isDefined) {
       new Random(seed.get) 
@@ -25,7 +25,7 @@ object RandomMatrixGenerator {
     	  if (isBoolean(label)) {
     		  random.nextInt(2).toString
     	  } else {
-    		  random.nextInt(nbConfigurations).toString
+    		  random.nextInt(maximumDomainSize).toString
     	  }
     	}
     }

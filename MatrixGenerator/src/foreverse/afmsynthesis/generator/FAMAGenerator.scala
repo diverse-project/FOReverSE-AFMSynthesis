@@ -2,7 +2,6 @@ package foreverse.afmsynthesis.generator
 
 import java.io.File
 import java.io.FileWriter
-
 import scala.collection.JavaConversions.bufferAsJavaList
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
@@ -11,14 +10,13 @@ import scala.concurrent.Future
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.future
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-
 import choco.cp.solver.CPSolver
 import choco.kernel.solver.ContradictionException
 import es.us.isa.FAMA.parser.FMFParser
 import fr.familiar.attributedfm.reasoning.ChocoReasoner
+import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.fileformats.AttributedReader
 
 class FAMAGenerator extends FlatSpec with Matchers {
 
@@ -30,8 +28,8 @@ class FAMAGenerator extends FlatSpec with Matchers {
    val features = collection.mutable.Set.empty[String]
    val types = collection.mutable.Map.empty[String, String]
    
-   val famaParser = new FMFParser()
-   val model = famaParser.parseModel(inputFile.getAbsolutePath)
+   val famaParser = new AttributedReader()
+   val model = famaParser.parseFile(inputFile.getAbsolutePath)
    
    val reasoner = new ChocoReasoner()
    val solver = new CPSolver()

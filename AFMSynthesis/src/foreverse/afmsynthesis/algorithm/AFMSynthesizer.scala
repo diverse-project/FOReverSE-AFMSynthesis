@@ -52,7 +52,7 @@ class AFMSynthesizer {
 	  val columnDomains = extractColumnDomains(matrix, knowledge)
 	  
 	  println("Domains")
-	  columnDomains.foreach(d => println(d._1 + " => " + d._2))
+//	  columnDomains.foreach(d => println(d._1 + " => " + d._2))
 	  println
 	  
 	  val (features, attributes) = extractFeaturesAndAttributes(matrix, columnDomains, knowledge)
@@ -61,11 +61,11 @@ class AFMSynthesizer {
 	  }).toMap
 	  
 	  println("Features")
-	  features.foreach(println)
+//	  features.foreach(println)
 	  println
 	  
 	  println("Attributes")
-	  attributes.foreach(println)
+//	  attributes.foreach(println)
 	  println
 	  
 	  // Compute binary implications
@@ -79,14 +79,14 @@ class AFMSynthesizer {
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
 	  
 	  println("BIG")
-	  println(big.toString())
+//	  println(big.toString())
 	  println
-	  val bigWriter = new FileWriter(new File("output/big.dot"))
-	  bigWriter.write(big.toString())
-	  bigWriter.close()
-	  
+//	  val bigWriter = new FileWriter(new File("output/big.dot"))
+//	  bigWriter.write(big.toString())
+//	  bigWriter.close()
+//	  
 	  println("Mutex graph")
-	  println(mutexGraph)
+//	  println(mutexGraph)
 	  println
 //	  val mtxWriter = new FileWriter(new File("output/mtx.dot"))
 //	  mtxWriter.write(mutexGraph.toString())
@@ -96,7 +96,7 @@ class AFMSynthesizer {
 	  val hierarchy = extractHierarchy(big, knowledge)
 	  
 	  println("Hierarchy")
-	  println(hierarchy)
+//	  println(hierarchy)
 	  println()
 	  val hWriter = new FileWriter(new File("output/h.dot"))
 	  hWriter.write(hierarchy.toString())
@@ -105,7 +105,7 @@ class AFMSynthesizer {
 	  placeAttributes(features, attributes, constraints, knowledge)
 	  
 	  println("Features with attributes")
-	  features.foreach(println)
+//	  features.foreach(println)
 	  println
 	  
 	  // Compute variability information
