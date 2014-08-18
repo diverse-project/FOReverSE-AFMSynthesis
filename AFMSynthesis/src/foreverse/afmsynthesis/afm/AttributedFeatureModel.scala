@@ -1,10 +1,10 @@
 package foreverse.afmsynthesis.afm
 
-import foreverse.afmsynthesis.afm.constraint.CrossTreeConstraint
+import foreverse.afmsynthesis.afm.constraint.Constraint
 
 class AttributedFeatureModel(
 	val diagram : AttributedFeatureDiagram,
-	val constraint : Option[CrossTreeConstraint]
+	val constraint : Option[Constraint]
 ) {
 
   

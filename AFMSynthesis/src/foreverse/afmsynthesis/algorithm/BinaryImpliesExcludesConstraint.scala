@@ -1,11 +1,11 @@
 package foreverse.afmsynthesis.algorithm
 
-import foreverse.afmsynthesis.afm.constraint.Value
+import foreverse.afmsynthesis.afm.constraint.Variable
 
 class BinaryImpliesExcludesConstraint(
-	val value : Value,
-	val implies : List[Value],
-	val excludes : List[Value]
+	val value : Variable,
+	val implies : List[Variable],
+	val excludes : List[Variable]
 ) {
 
   override def toString() = {

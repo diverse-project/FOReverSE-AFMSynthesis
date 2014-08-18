@@ -33,11 +33,15 @@ import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
+import foreverse.afmsynthesis.afm.constraint.AttributeComparison
 import foreverse.afmsynthesis.afm.constraint.AttributeValue
 import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.constraint.Constraint
+import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.constraint.FeatureValue
-import foreverse.afmsynthesis.afm.constraint.Value
+import foreverse.afmsynthesis.afm.constraint.Not
+import foreverse.afmsynthesis.afm.constraint.Variable
 import foreverse.afmsynthesis.test.PerformanceMonitor
 import fr.familiar.fm.converter.ExclusionGraph
 import fr.familiar.operations.ExclusionGraphUtil
@@ -77,6 +81,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  // Compute binary implications
 	  start("Binary implications")
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
+	  constraints.foreach(println)
 	  stopLast()
 	  
 	  println("Constraints")
@@ -175,7 +180,12 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  start("Binary excludes")
 	  val excludes = computeCrossTreeExcludes(mutexGraph, mutexGroups, xorGroups)
 	  stopLast()
-	  val rc = implies ::: excludes
+	  
+	  
+	  start("Complex constraints")
+	  val complexConstraints = computeComplexCrossTreeConstraints(constraints)
+	  stopLast()
+	  val rc = implies ::: excludes 
 	  stopLast()
 	  
 	  println("Constraints")
@@ -333,7 +343,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Convert a cell to a feature or an attribute value depending on the nature of the column
 	 */
 	private def convertVariableToValue(label : String, value : String, features : List[Feature], attributes : List[Attribute], invertedDictionaries : collection.mutable.Map[String, Map[String, String]], knowledge : Knowledge)
-	: Value = {
+	: Variable = {
 	  // FIXME : this conversion does not handle special case of implicit features (features not present in labels)
 	  val originValue = invertedDictionaries(label)(value)
 	  val feature = features.find(_.name == label)
@@ -351,14 +361,14 @@ class AFMSynthesizer extends PerformanceMonitor {
 	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImpliesExcludesConstraint])
 	: (ImplicationGraph[Feature], ExclusionGraph[Feature]) = {
 	  
-	  def toFeatureValue(value : Value) : Option[FeatureValue] = {
+	  def toFeatureValue(value : Variable) : Option[FeatureValue] = {
 	    value match {
 	      case FeatureValue(feature, positive) => Some(FeatureValue(feature, positive))
 	      case AttributeValue(_, _) => None
 	    }
 	  }
 	  
-	  def iterateOverPositiveValues(values : List[Value])(body : FeatureValue => Unit) = {
+	  def iterateOverPositiveValues(values : List[Variable])(body : FeatureValue => Unit) = {
 	     for (value <- values;
 	        featureValue = toFeatureValue(value)
 	        if featureValue.isDefined && featureValue.get.positive
@@ -670,5 +680,30 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  }
 
 	  (selectedMutex.toList, selectedOr.toList, selectedXor.toList)
+	}
+	
+	def computeComplexCrossTreeConstraints(constraints : List[BinaryImpliesExcludesConstraint])
+	: List[Constraint] = {
+	  val crossTreeConstraints = ListBuffer.empty[Constraint]
+	  
+//	  for (constraint <- constraints) {
+//	    val left = constraint.value match {
+//	      case FeatureValue(feature, true) => FeatureLiteral(feature)
+//	      case FeatureValue(feature, false) => Not(FeatureLiteral(feature))
+//	      case AttributeValue(attribute, value) => AttributeComparison(attribute, Equal(), value)
+//	    }
+//	    
+////	    constraint.
+//	    val right = constraint.implies.flatMap(implied =>
+//	      	implied match {
+//	      	  case AttributeValue(attribute, value) => Some(value)
+//	      	  case _ => None
+//	      	}
+//	      )
+//	      
+////	    val ctc = Implies(left, right)
+//	  }
+	  
+	  crossTreeConstraints.toList
 	}
 }

@@ -5,6 +5,6 @@ import foreverse.afmsynthesis.afm.Feature
 case class BinaryExclusionConstraint(
     val feature : Feature, 
     val excluded : Feature)
-    extends CrossTreeConstraint {
+    extends Constraint {
 
 }

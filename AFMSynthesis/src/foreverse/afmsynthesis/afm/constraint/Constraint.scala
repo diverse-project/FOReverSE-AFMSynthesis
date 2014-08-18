@@ -1,5 +1,5 @@
 package foreverse.afmsynthesis.afm.constraint
 
-abstract class CrossTreeConstraint {
+abstract class Constraint {
 
 }

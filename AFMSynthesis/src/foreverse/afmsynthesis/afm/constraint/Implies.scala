@@ -1,5 +1,5 @@
 package foreverse.afmsynthesis.afm.constraint
 
-case class Implies(left : Value, right : Value) extends CrossTreeConstraint {
+case class Implies(value : Variable, implied : Variable) extends Constraint {
 
 }
