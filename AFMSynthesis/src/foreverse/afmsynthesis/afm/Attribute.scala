@@ -8,7 +8,7 @@ class Attribute(
 ) extends Variable {
   
   override def toString() : String = {
-	"Attribute(" + name + ", " + domain + ")"
+	"Attribute(" + name + ")"// ", " + domain + ")"
   }
   
 } 

@@ -1,5 +1,5 @@
 package foreverse.afmsynthesis.afm.constraint
 
-case class Implies(value : Variable, implied : Variable) extends Constraint {
+case class Implies(left : Constraint, right : Constraint) extends Constraint {
 
 }

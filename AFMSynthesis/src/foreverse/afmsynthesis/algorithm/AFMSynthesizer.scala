@@ -3,7 +3,6 @@ package foreverse.afmsynthesis.algorithm
 import java.io.File
 import java.io.FileWriter
 import java.util.regex.Pattern
-
 import scala.Array.canBuildFrom
 import scala.Option.option2Iterable
 import scala.collection.JavaConversions.asScalaSet
@@ -15,11 +14,8 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.sys.process.ProcessLogger
 import scala.sys.process.stringSeqToProcess
-
 import org.jgrapht.alg.TransitiveClosure
-
 import com.github.tototoshi.csv.CSVWriter
-
 import dk.itu.fms.formula.dnf.DNF
 import dk.itu.fms.formula.dnf.DNFClause
 import foreverse.afmsynthesis.afm.Attribute
@@ -33,7 +29,7 @@ import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
-import foreverse.afmsynthesis.afm.constraint.AttributeComparison
+import foreverse.afmsynthesis.afm.constraint.AttributeOperator
 import foreverse.afmsynthesis.afm.constraint.AttributeValue
 import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
@@ -46,6 +42,14 @@ import foreverse.afmsynthesis.test.PerformanceMonitor
 import fr.familiar.fm.converter.ExclusionGraph
 import fr.familiar.operations.ExclusionGraphUtil
 import gsd.graph.ImplicationGraph
+import foreverse.afmsynthesis.afm.constraint.Equal
+import foreverse.afmsynthesis.afm.constraint.Implies
+import foreverse.afmsynthesis.afm.Attribute
+import foreverse.afmsynthesis.afm.constraint.True
+import foreverse.afmsynthesis.afm.constraint.IncludedIn
+import foreverse.afmsynthesis.afm.constraint.IncludedIn
+import foreverse.afmsynthesis.afm.constraint.And
+import foreverse.afmsynthesis.afm.constraint.Implies
 
 class AFMSynthesizer extends PerformanceMonitor {
   
@@ -113,9 +117,9 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  println("Hierarchy")
 //	  println(hierarchy)
 //	  println()
-	  val hWriter = new FileWriter(new File("output/h.dot"))
-	  hWriter.write(hierarchy.toString())
-	  hWriter.close()
+//	  val hWriter = new FileWriter(new File("output/h.dot"))
+//	  hWriter.write(hierarchy.toString())
+//	  hWriter.close()
 	  
 	  start("Place attributes")
 	  placeAttributes(features, attributes, constraints, knowledge)
@@ -165,7 +169,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  orGroups.foreach(println)
 	  println()
 	  
-	  println("XOr groups")
+	  println("Xor groups")
 	  xorGroups.foreach(println)
 	  println() 
 	  
@@ -242,7 +246,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Compute binary implications between the values of the matrix's columns
 	 */
 	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : Knowledge)
-	: List[BinaryImpliesExcludesConstraint] = {
+	: List[Constraint] = {
 
 	  // Create dictionary of matrix values
 	  val dictionaries : collection.mutable.Map[String, Map[String, String]] = collection.mutable.Map.empty
@@ -317,19 +321,28 @@ class AFMSynthesizer extends PerformanceMonitor {
 	    val matcher = pattern.matcher(line)
 	    if (matcher.matches()) {
 	    	
-	    	val leftVariable = matcher.group(1)
+	    	val leftLabelIndex = matcher.group(1)
+	    	val leftLabel = matrix.labels(leftLabelIndex.toInt - 1)
 		    val leftValue = matcher.group(2)
-		    val rightVariable = matcher.group(3)
-		    val impliedVariables = matcher.group(4).split(",").toList.filter(!_.isEmpty())
-		    val excludedVariables = matcher.group(5).split(",").toList.filter(!_.isEmpty())
 		    
-//		    println(leftVariable + " equals " + leftValue + " => " + rightVariable + " " + impliedVariables + " " + excludedVariables)
-   
-		    val value = convertVariableToValue(matrix.labels(leftVariable.toInt - 1), leftValue, features, attributes, invertedDictionaries, knowledge)
-	    	val implies = impliedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries, knowledge))
-	    	val excludes = excludedVariables.map(impliedVariable => convertVariableToValue(matrix.labels(rightVariable.toInt - 1), impliedVariable, features, attributes, invertedDictionaries, knowledge))
-		    val constraint = new BinaryImpliesExcludesConstraint(value, implies, excludes)
-	    	Some(constraint)
+		    val rightLabelIndex = matcher.group(3)
+		    val rightLabel = matrix.labels(rightLabelIndex.toInt - 1)
+		    val includedValues = matcher.group(4).split(",").toList.filter(!_.isEmpty())
+		    val excludedValues = matcher.group(5).split(",").toList.filter(!_.isEmpty())
+		    
+		    
+		    val leftVariable = convertLabelToVariable(leftLabel, features, attributes)
+		    val leftConstraint = convertLeftValueToConstraint(leftVariable, leftValue, invertedDictionaries, knowledge)
+		    
+		    val rightVariable = convertLabelToVariable(rightLabel, features, attributes) 
+		    val rightConstraint = convertRightValuesToConstraint(rightVariable, includedValues, excludedValues, invertedDictionaries, knowledge)
+		    
+		    val constraint = Implies(leftConstraint, rightConstraint)
+
+		    constraint match {
+	    	  case Implies(_, True()) => None
+	    	  case _ => Some(constraint)
+	    	}
 	    } else {
 	    	println("Following line is not a correct output of Sicstus reasoner: " + line)
 	    	None
@@ -342,81 +355,72 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Convert a cell to a feature or an attribute value depending on the nature of the column
 	 */
-	private def convertVariableToValue(label : String, value : String, features : List[Feature], attributes : List[Attribute], invertedDictionaries : collection.mutable.Map[String, Map[String, String]], knowledge : Knowledge)
+	private def convertLabelToVariable(label : String, features : List[Feature], attributes : List[Attribute])
 	: Variable = {
-	  // FIXME : this conversion does not handle special case of implicit features (features not present in labels)
-	  val originValue = invertedDictionaries(label)(value)
 	  val feature = features.find(_.name == label)
 	  if (feature.isDefined) {
-		new FeatureValue(feature.get, knowledge.isTrue(feature.get, originValue))
+    	feature.get
 	  } else {
 		val attribute = attributes.find(_.name == label)
-		new AttributeValue(attribute.get, originValue)
+		attribute.get
+	  }
+	}
+	
+	private def convertLeftValueToConstraint(variable : Variable, value : String, invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : Knowledge)
+	: Constraint = {
+	  variable match {
+	    case f : Feature => {
+	      if (knowledge.isTrue(f, invertedDictionaries(f.name)(value))) {
+		      f
+		    } else {
+		      Not(f)
+		    }
+	    }
+	    case a : Attribute => Equal(a, invertedDictionaries(a.name)(value))
+	  }
+	}
+	
+	private def convertRightValuesToConstraint(variable : Variable, includedValues : List[String], excludedValues : List[String], invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : Knowledge)
+	: Constraint = {
+	  variable match {
+	    case f : Feature => {
+	      if (includedValues.size == 2) {
+	    	  True()
+	      } else {
+	    	  if (knowledge.isTrue(f, invertedDictionaries(f.name)(includedValues.head))) {
+	    	    f
+	    	  } else {
+	    	    Not(f)
+	    	  }
+	      }
+	    }
+	    case a : Attribute => {
+	      val originalIncludedValues = includedValues.map(invertedDictionaries(a.name)(_)).toSet
+	      val originalExcludedValues = excludedValues.map(invertedDictionaries(a.name)(_)).toSet
+	      And(IncludedIn(a, originalIncludedValues), Not(IncludedIn(a, originalExcludedValues)))
+	    }
 	  }
 	}
 	
 	/**
 	 * Compute binary implication graph and mutex graph
 	 */
-	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[BinaryImpliesExcludesConstraint])
+	def computeBinaryImplicationAndMutexGraph(features : List[Feature], constraints : List[Constraint])
 	: (ImplicationGraph[Feature], ExclusionGraph[Feature]) = {
-	  
-	  def toFeatureValue(value : Variable) : Option[FeatureValue] = {
-	    value match {
-	      case FeatureValue(feature, positive) => Some(FeatureValue(feature, positive))
-	      case AttributeValue(_, _) => None
-	    }
-	  }
-	  
-	  def iterateOverPositiveValues(values : List[Variable])(body : FeatureValue => Unit) = {
-	     for (value <- values;
-	        featureValue = toFeatureValue(value)
-	        if featureValue.isDefined && featureValue.get.positive
-	        ) {
-	       body(featureValue.get)
-	     }
-	  }
-	  
-//	  val big = new BinaryImplicationGraph
-//	  big.addNodes(features)
 	  
 	  val big = new ImplicationGraph[Feature]
 	  features.foreach(big.addVertex(_))
 	  
-//	  val mutexGraph = new MutexGraph
-//	  mutexGraph.addNodes(features)
-	  
 	  val mutexGraph = new ExclusionGraph[Feature]
 	  features.foreach(mutexGraph.addVertex(_))
 	  
-	  for (constraint <- constraints;
-		  source = toFeatureValue(constraint.value)
-	      if source.isDefined && source.get.positive) {
-	    
-		  val impliedValues = constraint.implies.flatMap(toFeatureValue(_))
-		  if (impliedValues.size == 1 && impliedValues.head.positive) {
-		    big.addEdge(source.get.feature, impliedValues.head.feature)
-		  }
-		  
-		  val excludedValues = constraint.excludes.flatMap(toFeatureValue(_))
-		  if (excludedValues.size == 1 && excludedValues.head.positive) {
-		    mutexGraph.addEdge(source.get.feature, excludedValues.head.feature)
-		  }
+	  for (constraint <- constraints) {
+	    constraint match {
+	      case Implies(f1 : Feature, f2 : Feature) => big.addEdge(f1, f2)
+	      case Implies(f1 : Feature, Not(f2 : Feature)) => mutexGraph.addEdge(f1, f2)
+	      case _ =>
+	    }
 	  }
-	  
-//	  // Add root to implication graph
-//	  val topCliques = big.reduceCliques().roots()
-//	  
-//	  big.addVertex(root)
-//	  features.foreach(big.addEdge(_, root))
-//	  
-//	  // add edges from root to top features 
-//	  // which are mandatory because the root is not part of the matrix 
-//	  for (topClique <- topCliques;
-//	      topFeature <- topClique) {
-//		  big.addEdge(root, topFeature)
-//	  }
-	  
 	  
 	  (big, mutexGraph)
 	}
@@ -432,7 +436,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Place attributes in features
 	 */
-	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[BinaryImpliesExcludesConstraint], knowledge : Knowledge) = {
+	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[Constraint], knowledge : Knowledge) = {
 
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
@@ -443,16 +447,12 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  // If (not f => a = 0d), then the feature f is a legal position for the attribute a
 	  // here we check the negation of this property to remove illegal positions
 	  for (constraint <- constraints) {
-	    constraint.value match {
-	      case FeatureValue(feature, positive) if !positive=>
-	        for (implied <- constraint.implies) {
-	          implied match {
-	            case AttributeValue(attribute, value) if value != attribute.domain.nullValue =>
-	              legalPositions(attribute) = legalPositions(attribute) - feature
-	            case _ =>
-	          }
+	    constraint match {
+	      case Implies(Not(f : Feature), And(IncludedIn(attribute, impliedValues), _)) =>
+	        if (impliedValues.exists(_ != attribute.domain.nullValue)) {
+	          legalPositions(attribute) = legalPositions(attribute) - f
 	        }
-	      case _ =>
+	      case _ =>  
 	    }
 	  }
 
@@ -682,28 +682,10 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  (selectedMutex.toList, selectedOr.toList, selectedXor.toList)
 	}
 	
-	def computeComplexCrossTreeConstraints(constraints : List[BinaryImpliesExcludesConstraint])
+	def computeComplexCrossTreeConstraints(constraints : List[Constraint])
 	: List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
-	  
-//	  for (constraint <- constraints) {
-//	    val left = constraint.value match {
-//	      case FeatureValue(feature, true) => FeatureLiteral(feature)
-//	      case FeatureValue(feature, false) => Not(FeatureLiteral(feature))
-//	      case AttributeValue(attribute, value) => AttributeComparison(attribute, Equal(), value)
-//	    }
-//	    
-////	    constraint.
-//	    val right = constraint.implies.flatMap(implied =>
-//	      	implied match {
-//	      	  case AttributeValue(attribute, value) => Some(value)
-//	      	  case _ => None
-//	      	}
-//	      )
-//	      
-////	    val ctc = Implies(left, right)
-//	  }
-	  
+	  crossTreeConstraints ++= constraints
 	  crossTreeConstraints.toList
 	}
 }
