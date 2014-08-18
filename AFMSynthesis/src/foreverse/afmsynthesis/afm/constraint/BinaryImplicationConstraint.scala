@@ -1,4 +1,6 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.afm.constraint
+
+import foreverse.afmsynthesis.afm.Feature
 
 case class BinaryImplicationConstraint(
     val feature : Feature, 

@@ -3,6 +3,7 @@ package foreverse.afmsynthesis.algorithm
 import java.io.File
 import java.io.FileWriter
 import java.util.regex.Pattern
+
 import scala.Array.canBuildFrom
 import scala.Option.option2Iterable
 import scala.collection.JavaConversions.asScalaSet
@@ -14,35 +15,33 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.sys.process.ProcessLogger
 import scala.sys.process.stringSeqToProcess
+
 import org.jgrapht.alg.TransitiveClosure
+
 import com.github.tototoshi.csv.CSVWriter
+
 import dk.itu.fms.formula.dnf.DNF
 import dk.itu.fms.formula.dnf.DNFClause
 import foreverse.afmsynthesis.afm.Attribute
-import foreverse.afmsynthesis.afm.AttributeValue
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
 import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.FeatureValue
+import foreverse.afmsynthesis.afm.FeatureGroup
 import foreverse.afmsynthesis.afm.Knowledge
 import foreverse.afmsynthesis.afm.Mandatory
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.Relation
-import foreverse.afmsynthesis.afm.Value
 import foreverse.afmsynthesis.afm.XorGroup
+import foreverse.afmsynthesis.afm.constraint.AttributeValue
+import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.constraint.FeatureValue
+import foreverse.afmsynthesis.afm.constraint.Value
+import foreverse.afmsynthesis.test.PerformanceMonitor
 import fr.familiar.fm.converter.ExclusionGraph
 import fr.familiar.operations.ExclusionGraphUtil
 import gsd.graph.ImplicationGraph
-import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.FeatureGroup
-import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
-import foreverse.afmsynthesis.test.PerformanceMonitor
-import foreverse.afmsynthesis.afm.OrGroup
 
 class AFMSynthesizer extends PerformanceMonitor {
   

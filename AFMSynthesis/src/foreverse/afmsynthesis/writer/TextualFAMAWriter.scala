@@ -9,8 +9,8 @@ import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
 import java.io.File
 import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 import scala.collection.JavaConversions._
 
 class TextualFAMAWriter extends FAMAWriter {

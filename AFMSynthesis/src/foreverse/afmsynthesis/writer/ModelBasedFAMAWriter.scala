@@ -19,10 +19,12 @@ import gsd.graph.ImplicationGraph
 import scala.collection.JavaConversions._
 import java.util.HashSet
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.RequiresDependency
-import foreverse.afmsynthesis.afm.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
-import foreverse.afmsynthesis.afm.BinaryExclusionConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ExcludesDependency
+import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
+import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 

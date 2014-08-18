@@ -1,6 +1,6 @@
 package foreverse.afmsynthesis.algorithm
 
-import foreverse.afmsynthesis.afm.Value
+import foreverse.afmsynthesis.afm.constraint.Value
 
 class BinaryImpliesExcludesConstraint(
 	val value : Value,

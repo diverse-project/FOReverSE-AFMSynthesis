@@ -1,6 +1,7 @@
 package foreverse.afmsynthesis.afm
 
 import gsd.graph.ImplicationGraph
+import foreverse.afmsynthesis.afm.constraint.CrossTreeConstraint
 
 class AttributedFeatureDiagram ( 
   val features : List[Feature],

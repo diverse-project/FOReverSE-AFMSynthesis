@@ -1,4 +1,7 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.afm.constraint
+
+import foreverse.afmsynthesis.afm.Attribute
+import foreverse.afmsynthesis.afm.Feature
 
 abstract class Value
 
