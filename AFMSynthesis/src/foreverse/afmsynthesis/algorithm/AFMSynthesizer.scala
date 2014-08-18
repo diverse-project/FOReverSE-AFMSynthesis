@@ -50,6 +50,7 @@ import foreverse.afmsynthesis.afm.constraint.IncludedIn
 import foreverse.afmsynthesis.afm.constraint.IncludedIn
 import foreverse.afmsynthesis.afm.constraint.And
 import foreverse.afmsynthesis.afm.constraint.Implies
+import foreverse.afmsynthesis.afm.constraint.Excludes
 
 class AFMSynthesizer extends PerformanceMonitor {
   
@@ -574,7 +575,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Compute cross tree binary implications between features
 	 */
 	def computeCrossTreeImplications(hierarchy: ImplicationGraph[Feature], big : ImplicationGraph[Feature], mandatoryRelations : List[Mandatory]) 
-	: List[BinaryImplicationConstraint] = {
+	: List[Implies] = {
 	  
 	  // Compute represented implications by the hierarchy and the mandatory relations
 	  val representedImplications = new ImplicationGraph[Feature]
@@ -592,13 +593,13 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  TransitiveClosure.INSTANCE.closeSimpleDirectedGraph(representedImplications)
 	  
 	  // Create cross tree implications 
-	  val implies = ListBuffer.empty[BinaryImplicationConstraint]
+	  val implies = ListBuffer.empty[Implies]
 	  for (edge <- big.edges()) {
 		  val source = big.getEdgeSource(edge)
 		  val target = big.getEdgeTarget(edge)
 		  
 		  if (!Option(representedImplications.findEdge(source, target)).isDefined) {
-		    implies += BinaryImplicationConstraint(source, target)
+		    implies += Implies(source, target)
 		  }
 	  }
 	  
@@ -609,8 +610,8 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Compute cross tree binary exclusions between features
 	 */
 	def computeCrossTreeExcludes(mutexGraph : ExclusionGraph[Feature], mutexGroups : List[MutexGroup], xorGroups : List[XorGroup])
-	: List[BinaryExclusionConstraint] = {
-	  val excludes = ListBuffer.empty[BinaryExclusionConstraint]
+	: List[Excludes] = {
+	  val excludes = ListBuffer.empty[Excludes]
 	  
 	  // Remove edges of mutex graph that are represented in mutex groups
 	  val crossTreeMutex = mutexGraph.clone().asInstanceOf[ExclusionGraph[Feature]]
@@ -626,7 +627,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  for (edge <- crossTreeMutex.edgeSet()) {
 	    val feature = crossTreeMutex.getEdgeSource(edge)
 	    val excluded = crossTreeMutex.getEdgeTarget(edge)
-	    excludes += new BinaryExclusionConstraint(feature, excluded)
+	    excludes += new Excludes(feature, excluded)
 	  }
 	  
 	  excludes.toList

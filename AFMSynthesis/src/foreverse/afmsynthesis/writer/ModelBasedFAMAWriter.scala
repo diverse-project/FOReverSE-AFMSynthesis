@@ -1,30 +1,27 @@
 package foreverse.afmsynthesis.writer
 
 import java.io.File
+import java.util.HashSet
+
+import scala.collection.JavaConversions.asScalaSet
+
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.AttributedFeature
+import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ExcludesDependency
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.FAMAAttributedFeatureModel
+import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.RequiresDependency
 import es.us.isa.FAMA.models.domain.SetIntegerDomain
 import es.us.isa.FAMA.models.featureModel.Cardinality
 import es.us.isa.FAMA.models.featureModel.extended.GenericAttribute
+import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
 import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.Mandatory
 import foreverse.afmsynthesis.afm.Mandatory
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.Optional
 import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
-import gsd.graph.ImplicationGraph
-import scala.collection.JavaConversions._
-import java.util.HashSet
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.RequiresDependency
-import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
-import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ExcludesDependency
-import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
+import foreverse.afmsynthesis.afm.constraint.Excludes
+import foreverse.afmsynthesis.afm.constraint.Implies
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 
@@ -123,9 +120,9 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 
     for (constraint <- afd.constraints) {
       val famaConstraint = constraint match {
-        case BinaryImplicationConstraint(feature, implied) => 
+        case Implies(feature : Feature, implied : Feature) => 
           Some(new RequiresDependency(afmToFAMA(feature), afmToFAMA(implied)))
-        case BinaryExclusionConstraint(feature, excluded) =>
+        case Excludes(feature : Feature, excluded : Feature) =>
           Some(new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded)))
         case _ => None
       }

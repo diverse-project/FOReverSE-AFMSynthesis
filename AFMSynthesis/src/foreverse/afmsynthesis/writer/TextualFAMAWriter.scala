@@ -9,9 +9,9 @@ import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
 import java.io.File
 import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
-import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
 import scala.collection.JavaConversions._
+import foreverse.afmsynthesis.afm.constraint.Implies
+import foreverse.afmsynthesis.afm.constraint.Excludes
 
 class TextualFAMAWriter extends FAMAWriter {
 
@@ -121,8 +121,8 @@ class TextualFAMAWriter extends FAMAWriter {
   private def writeConstraints(afm : AttributedFeatureModel, writer : FileWriter) {
     for (constraint <- afm.diagram.constraints) {
       val constraintString = constraint match {
-        case BinaryImplicationConstraint(feature, implied) => feature.name + " REQUIRES " + implied.name
-        case BinaryExclusionConstraint(feature, excluded) => feature.name + " EXCLUDES " + excluded.name
+        case Implies(feature : Feature, implied : Feature) => feature.name + " REQUIRES " + implied.name
+        case Excludes(feature : Feature, excluded : Feature) => feature.name + " EXCLUDES " + excluded.name
         case _ => ""
       }
       
