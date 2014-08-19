@@ -63,8 +63,6 @@ class ModelBasedFAMAWriter extends FAMAWriter {
     val famaRoot = afmToFAMA(root)
     famaAFM.setRoot(famaRoot)
     
-    relations.foreach(println)
-    
     // Set relations
     for (relation <- relations) {
       val famaRelation = new es.us.isa.FAMA.models.FAMAAttributedfeatureModel.Relation
@@ -72,11 +70,11 @@ class ModelBasedFAMAWriter extends FAMAWriter {
       relation.children.foreach(c => famaRelation.addDestination(afmToFAMA(c))) 
       
       val (cardInf, cardSup) = relation match {
-        case Optional(_,_) => (0,0)
+        case Optional(_,_) => (0, 1)
         case Mandatory(_,_) => (1, 1)
         case MutexGroup(_,_) => (0, 1)
         case OrGroup(_,_) => (1, relation.children.size)
-        case XorGroup(_,_) => (1, 1) // FIXME : not working
+        case XorGroup(_,_) => (1, 1)
       }
 //      println(relation.parent + " / " + relation.children + " : " + cardInf + ", " + cardSup)
       famaRelation.addCardinality(new Cardinality(cardInf, cardSup))

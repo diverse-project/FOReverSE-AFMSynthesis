@@ -6,7 +6,7 @@ import java.io.File
 import scala.io.Source
 import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
 import foreverse.afmsynthesis.algorithm.AFMSynthesizer
-import foreverse.afmsynthesis.afm.Knowledge
+import foreverse.afmsynthesis.afm.DomainKnowledge
 import com.github.tototoshi.csv.CSVReader
 import java.io.BufferedReader
 import java.io.FileReader
@@ -17,6 +17,7 @@ import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
 import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
 import foreverse.afmsynthesis.writer.TextualFAMAWriter
 import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
+import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -33,7 +34,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
 		println(inputFile.getAbsolutePath())
 		val matrix = parser.parse(inputFile.getAbsolutePath, dummyRoot, rootName(inputFile.getName()))
-		val knowledge = new Knowledge
+		val knowledge = new SimpleDomainKnowledge
 
 		val afm = synthesizer.synthesize(matrix, knowledge)
 		val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))

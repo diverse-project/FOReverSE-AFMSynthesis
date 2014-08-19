@@ -1,23 +1,22 @@
 package foreverse.afmsynthesis.afm
 
+import foreverse.ksynthesis.mst.WeightedImplicationGraph
+import gsd.graph.ImplicationGraph
 import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
 import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.ListBuffer
-import foreverse.afmsynthesis.algorithm.BinaryImplicationGraph
-import gsd.graph.ImplicationGraph
-import foreverse.ksynthesis.InteractiveFMSynthesizer
 import foreverse.ksynthesis.mst.OptimumBranchingFinder
-import foreverse.ksynthesis.mst.WeightedImplicationGraph
+import scala.collection.JavaConversions._
+import gsd.graph.SimpleEdge
 
-class Knowledge {
+class SimpleDomainKnowledge extends DomainKnowledge {
 
-  def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, columnDomains : Map[String, Set[String]]) 
+  override def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, columnDomains : Map[String, Set[String]]) 
   : (List[Feature], List[Attribute]) = {
     
 	  val features : ListBuffer[Feature] = ListBuffer.empty
 	  val attributes : ListBuffer[Attribute] = ListBuffer.empty
     
-	  for (label <- matrix.labels) {
+	  for (label <- matrix.labels) yield {
 		val values = columnDomains(label)
 		if (values.forall(v => v == "0" || v == "1")) {
 		  features += new Feature(label)
@@ -49,23 +48,31 @@ class Knowledge {
 
   }
   
-  def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
+  override def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
     val hierarchyFinder = new OptimumBranchingFinder[Feature]
-    val wbig = new WeightedImplicationGraph[Feature](big)
+    val wbig = new WeightedImplicationGraph[Feature](big.clone())
+
+    // If a feature is named "root", force it to be the root of the hierarchy
+    val edgesToRemove = ListBuffer.empty[SimpleEdge]
+    for (feature <- wbig.vertices() if feature.name == "root") yield {
+       edgesToRemove ++= wbig.outgoingEdges(feature)
+    }
+    wbig.removeAllEdges(edgesToRemove)
+    
     // TODO : if a feature is named "root", remove the necessary BIG edges to place it as the root of the AFM
     hierarchyFinder.findOptimumBranching(wbig)
   }
   
-  def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
+  override def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
     require(!legalPositions.isEmpty, "An attribute must have at least one possible place in the hierarchy")
     legalPositions.head
   }
   
-  def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {
+  override def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {
     overlappingGroups.head
   }
   
-  def isTrue(feature : Feature, value : String) : Boolean = {
+  override def isTrue(feature : Feature, value : String) : Boolean = {
     value == "1"
   }
   

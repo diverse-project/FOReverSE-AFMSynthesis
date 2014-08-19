@@ -174,13 +174,13 @@ public class AttributedWriter implements IWriter {
 				Relation rel = relIt.next();
 				Iterator<AttributedFeature> destIt = rel.getDestination();
 
-				if (rel.isMandatory() && !rel.isAlternative()) {
+				if (rel.isMandatory() && rel.getNumberOfDestination() == 1) {
 					while (destIt.hasNext()) {
 						AttributedFeature dest = destIt.next();
 						relsStr += " " + dest.getName() + " ";
 
 					}
-				} else if (rel.isOptional()) {
+				} else if (rel.isOptional() && rel.getNumberOfDestination() == 1) {
 					while (destIt.hasNext()) {
 						AttributedFeature dest = destIt.next();
 						relsStr += "[" + dest.getName() + "] ";

@@ -23,7 +23,7 @@ import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
 import foreverse.afmsynthesis.afm.Feature
 import foreverse.afmsynthesis.afm.FeatureGroup
-import foreverse.afmsynthesis.afm.Knowledge
+import foreverse.afmsynthesis.afm.DomainKnowledge
 import foreverse.afmsynthesis.afm.Mandatory
 import foreverse.afmsynthesis.afm.MutexGroup
 import foreverse.afmsynthesis.afm.OrGroup
@@ -54,7 +54,7 @@ import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 class AFMSynthesizer extends PerformanceMonitor {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : Knowledge) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge) : AttributedFeatureModel = {
 	  reset() // Reset performance monitor
 	  start("Synthesis")
 	  
@@ -211,7 +211,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Extract domains of columns from the matrix
 	 */
-	def extractColumnDomains(matrix : ConfigurationMatrix, knowledge : Knowledge) : Map[String, Set[String]] = {
+	def extractColumnDomains(matrix : ConfigurationMatrix, knowledge : DomainKnowledge) : Map[String, Set[String]] = {
 	  
 	  val domains = collection.mutable.Map.empty[String, Set[String]]
 		
@@ -230,7 +230,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Extract features and attributes from the matrix
 	 */
-	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Set[String]], knowledge : Knowledge) 
+	def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, domains : Map[String, Set[String]], knowledge : DomainKnowledge) 
 	: (List[Feature], List[Attribute]) = {
 	  // Separate features from attributes w.r.t. the knowledge
 	  val (features, attributes) = knowledge.extractFeaturesAndAttributes(matrix, domains)
@@ -256,7 +256,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Compute binary implications between the values of the matrix's columns
 	 */
-	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : Knowledge)
+	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : DomainKnowledge)
 	: List[Constraint] = {
 
 	  // Create dictionary of matrix values
@@ -377,7 +377,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  }
 	}
 	
-	private def convertLeftValueToConstraint(variable : Variable, value : String, invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : Knowledge)
+	private def convertLeftValueToConstraint(variable : Variable, value : String, invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : DomainKnowledge)
 	: Constraint = {
 	  variable match {
 	    case f : Feature => {
@@ -391,7 +391,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  }
 	}
 	
-	private def convertRightValuesToConstraint(variable : Variable, includedValues : List[String], excludedValues : List[String], invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : Knowledge)
+	private def convertRightValuesToConstraint(variable : Variable, includedValues : List[String], excludedValues : List[String], invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : DomainKnowledge)
 	: Constraint = {
 	  variable match {
 	    case f : Feature => {
@@ -440,14 +440,14 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Extract a particular hierarchy for the AFM
 	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
 	 */
-	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : Knowledge): ImplicationGraph[Feature] = {
+	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : DomainKnowledge): ImplicationGraph[Feature] = {
 	  knowledge.selectHierarchy(big)
 	}
 	
 	/**
 	 * Place attributes in features
 	 */
-	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[Constraint], knowledge : Knowledge) = {
+	def placeAttributes(features : List[Feature], attributes : List[Attribute], constraints : List[Constraint], knowledge : DomainKnowledge) = {
 
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
@@ -515,7 +515,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	/**
 	 * Compute all possible or groups
 	 */
-	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : Knowledge) 
+	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : DomainKnowledge) 
 	: List[OrGroup] = {
 	  
 	  // Convert matrix to DNF
@@ -647,7 +647,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	 * Select non overlapping groups among mutex or and xor groups
 	 * Mutex and Or groups than are also Xor groups are discarded to keep the maximality of the AFM
 	 */
-	def processOverlappingGroups(features : List[Feature], mutexGroups : List[MutexGroup], orGroups : List[OrGroup], xorGroups : List[XorGroup], knowledge : Knowledge)
+	def processOverlappingGroups(features : List[Feature], mutexGroups : List[MutexGroup], orGroups : List[OrGroup], xorGroups : List[XorGroup], knowledge : DomainKnowledge)
 	: (List[MutexGroup], List[OrGroup], List[XorGroup]) = {
 	  val selectedMutex = collection.mutable.Set.empty[MutexGroup]
 	  val selectedOr = collection.mutable.Set.empty[OrGroup]
@@ -693,6 +693,9 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  (selectedMutex.toList, selectedOr.toList, selectedXor.toList)
 	}
 	
+	/**
+	 * Compute complex constraints that can be integrated in RC
+	 */
 	def computeComplexCrossTreeConstraints(constraints : List[Constraint])
 	: List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
