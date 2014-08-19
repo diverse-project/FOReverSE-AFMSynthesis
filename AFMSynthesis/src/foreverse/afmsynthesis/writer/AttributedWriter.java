@@ -174,7 +174,7 @@ public class AttributedWriter implements IWriter {
 				Relation rel = relIt.next();
 				Iterator<AttributedFeature> destIt = rel.getDestination();
 
-				if (rel.isMandatory()) {
+				if (rel.isMandatory() && !rel.isAlternative()) {
 					while (destIt.hasNext()) {
 						AttributedFeature dest = destIt.next();
 						relsStr += " " + dest.getName() + " ";
