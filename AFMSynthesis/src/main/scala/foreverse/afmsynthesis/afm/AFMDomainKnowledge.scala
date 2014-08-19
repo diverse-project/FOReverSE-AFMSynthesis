@@ -6,6 +6,7 @@ import gsd.graph.ImplicationGraph
 import scala.collection.mutable.ListBuffer
 import foreverse.ksynthesis.mst.OptimumBranchingFinder
 import foreverse.ksynthesis.mst.WeightedImplicationGraph
+import scala.collection.JavaConversions._
 
 class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowledge {
   
@@ -40,18 +41,36 @@ class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowled
   } 
   
   override def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
-    // TODO : select hierarchy from the AFM
+    val kHierarchy = afm.diagram.hierarchy
     
     val hierarchyFinder = new OptimumBranchingFinder[Feature]
     val wbig = new WeightedImplicationGraph[Feature](big)
+    for (edge <- wbig.edges()) {
+      val source = wbig.getSource(edge)
+      val target = wbig.getTarget(edge)
+      
+      val kSource = kHierarchy.vertices().find(_.name == source.name).get
+      val kTarget = kHierarchy.vertices().find(_.name == target.name).get
+      
+      if (kHierarchy.containsEdge(kSource, kTarget)) {
+    	  wbig.setEdgeWeight(edge, 1)
+      }
+      
+    }
+    
     hierarchyFinder.findOptimumBranching(wbig)
   }
   
   override def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
-    // TODO : place attributes w.r.t the AFM
-    
     require(!legalPositions.isEmpty, "An attribute must have at least one possible place in the hierarchy")
-    legalPositions.head
+    
+    val enclosingFeature = afm.diagram.features.find(_.attributes.contains(attribute))
+    val position = legalPositions.find(_.name == enclosingFeature.get.name)
+    if (position.isDefined) {
+    	position.get
+    } else {
+    	legalPositions.head
+    }
   }
   
   override def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {

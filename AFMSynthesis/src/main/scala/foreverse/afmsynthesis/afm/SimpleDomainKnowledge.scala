@@ -22,10 +22,8 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		  features += new Feature(label)
 		} else {
 			
-		  // FIXME : determine null value
 		  val nullValue = "0" 
 		    
-		  // FIXME : determine (partial) order
 		  val inferior = (a : String, b : String) => {
 		    try {
 		      val intA = a.toInt
@@ -59,7 +57,6 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     }
     wbig.removeAllEdges(edgesToRemove)
     
-    // TODO : if a feature is named "root", remove the necessary BIG edges to place it as the root of the AFM
     hierarchyFinder.findOptimumBranching(wbig)
   }
   
