@@ -31,8 +31,6 @@ import foreverse.afmsynthesis.afm.Relation
 import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.constraint.AttributeOperator
 import foreverse.afmsynthesis.afm.constraint.AttributeValue
-import foreverse.afmsynthesis.afm.constraint.BinaryExclusionConstraint
-import foreverse.afmsynthesis.afm.constraint.BinaryImplicationConstraint
 import foreverse.afmsynthesis.afm.constraint.Constraint
 import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.constraint.FeatureValue
@@ -47,10 +45,11 @@ import foreverse.afmsynthesis.afm.constraint.Implies
 import foreverse.afmsynthesis.afm.Attribute
 import foreverse.afmsynthesis.afm.constraint.True
 import foreverse.afmsynthesis.afm.constraint.IncludedIn
-import foreverse.afmsynthesis.afm.constraint.IncludedIn
 import foreverse.afmsynthesis.afm.constraint.And
 import foreverse.afmsynthesis.afm.constraint.Implies
 import foreverse.afmsynthesis.afm.constraint.Excludes
+import foreverse.afmsynthesis.afm.Domain
+import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 
 class AFMSynthesizer extends PerformanceMonitor {
   
@@ -190,7 +189,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  start("Complex constraints")
 	  val complexConstraints = computeComplexCrossTreeConstraints(constraints)
 	  stopLast()
-	  val rc = implies ::: excludes 
+	  val rc = implies ::: excludes ::: complexConstraints
 	  stopLast()
 	  
 	  println("Constraints")
@@ -686,7 +685,36 @@ class AFMSynthesizer extends PerformanceMonitor {
 	def computeComplexCrossTreeConstraints(constraints : List[Constraint])
 	: List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
-	  crossTreeConstraints ++= constraints
+//	  crossTreeConstraints ++= constraints
+	  
+	  def findMax(domain : Domain, values : Set[String]) : Option[String] =  {
+	    val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+	    val sortedValues = values.toList.sortWith(domain.lessThan)
+	    if (sortedDomainValues.startsWith(sortedValues)) {
+	      Some(sortedValues.last)
+	    } else {
+	      None
+	    }
+	  }
+	  
+	  for (constraint <- constraints) {
+	    val ctc = constraint match {
+	      case Implies(left, And(IncludedIn(attribute, values), _)) => 
+	        val max = findMax(attribute.domain, values)
+	        if (max.isDefined) {
+	          Some(Implies(left, LessOrEqual(attribute, max.get)))
+	        } else {
+	          None
+	        }
+	        
+	      case _ => None
+	    }
+	    
+	    if(ctc.isDefined) {
+	    	crossTreeConstraints += ctc.get 
+	    }
+	    
+	  }
 	  crossTreeConstraints.toList
 	}
 }

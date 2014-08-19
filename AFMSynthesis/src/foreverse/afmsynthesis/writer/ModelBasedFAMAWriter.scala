@@ -2,9 +2,7 @@ package foreverse.afmsynthesis.writer
 
 import java.io.File
 import java.util.HashSet
-
 import scala.collection.JavaConversions.asScalaSet
-
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.AttributedFeature
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ExcludesDependency
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.FAMAAttributedFeatureModel
@@ -22,6 +20,11 @@ import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.constraint.Implies
+import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ComplexConstraint
+import foreverse.afmsynthesis.afm.constraint.LessOrEqual
+import foreverse.afmsynthesis.afm.constraint.Not
+import foreverse.afmsynthesis.afm.constraint.Equal
+import foreverse.afmsynthesis.afm.Attribute
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 
@@ -118,12 +121,28 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   
   private def writeConstraints(afd : AttributedFeatureDiagram, famaAFM : FAMAAttributedFeatureModel, afmToFAMA : Map[Feature, AttributedFeature]) {
 
+    def attributeToFama(attribute : Attribute) : String = {
+      val feature = afd.features.find(_.attributes.contains(attribute))
+      feature.get.name + "." + attribute.name
+    }
+    
     for (constraint <- afd.constraints) {
       val famaConstraint = constraint match {
         case Implies(feature : Feature, implied : Feature) => 
           Some(new RequiresDependency(afmToFAMA(feature), afmToFAMA(implied)))
         case Excludes(feature : Feature, excluded : Feature) =>
           Some(new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded)))
+        case Implies(left, LessOrEqual(attribute, max)) => // TODO: convert to FAMA
+          	val leftString = left match {
+          	  case f : Feature => f.name
+          	  case Not(f : Feature) => "NOT " + f.name + ""
+          	  case Equal(a, value) => attributeToFama(a) + " = " + value
+          	  case _ => 
+          	}
+          	val rightString = attributeToFama(attribute) + " <= " + max
+          	val constraintString = leftString +  " IMPLIES " + rightString
+          	println(constraintString)
+          	Some(new ComplexConstraint(constraintString))
         case _ => None
       }
       
