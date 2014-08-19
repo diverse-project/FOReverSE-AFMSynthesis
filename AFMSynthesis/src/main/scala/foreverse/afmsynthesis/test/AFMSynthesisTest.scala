@@ -57,7 +57,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   it should "synthesize AFM from randomly generated AFMs" in {
     val dir = new File(GENERATED_DIR)
-    synthesizeAFMFromDir(dir, true)
+    synthesizeAFMFromDir(dir, false)
   }
   
   it should "be complete" in {
@@ -108,8 +108,8 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "Random matrix generator" should "generate random matrices" in {
     val nbMatrices = 10
     val nbVariables = 5
-    val nbConfigurations = 100
-    val maximumDomainSize = 10
+    val nbConfigurations = 10
+    val maximumDomainSize = 5
     
     val random = new Random
     val writer = new CSVConfigurationMatrixWriter

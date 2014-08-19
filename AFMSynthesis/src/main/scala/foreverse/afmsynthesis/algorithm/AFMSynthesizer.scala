@@ -237,7 +237,18 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  
 	  // Remove dead features
 	  val aliveFeatures = features.filter(feature => domains(feature.name).exists(knowledge.isTrue(feature, _)))
-	  // FIXME : remove corresponding column in matrix
+	  
+	  if (aliveFeatures.size < features.size) {
+	    val filteredLabels = matrix.labels.filter(label => aliveFeatures.exists(_.name == label))
+	    val filteredConfigurations = for (configuration <- matrix.configurations) yield {
+	      val filteredConfiguration = configuration.zipWithIndex.filter(
+	          value => aliveFeatures.exists(_.name == matrix.labels(value._2)))
+	      filteredConfiguration.map(_._1)
+	      
+	    }
+	    matrix.labels = filteredLabels
+	    matrix.configurations = filteredConfigurations
+	  }
 	  
 	  (aliveFeatures, attributes)
 	}
