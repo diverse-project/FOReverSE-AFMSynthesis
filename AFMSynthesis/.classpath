@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="src/main/scala"/>
 	<classpathentry exported="true" kind="lib" path="lib/scalatest_2.10-2.1.0.jar"/>
 	<classpathentry kind="lib" path="lib/scala-csv_2.10-1.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/graph-core_2.10-1.8.1.jar"/>
