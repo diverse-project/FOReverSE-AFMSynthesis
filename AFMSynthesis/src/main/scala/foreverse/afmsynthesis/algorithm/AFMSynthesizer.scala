@@ -57,170 +57,105 @@ class AFMSynthesizer extends PerformanceMonitor {
   
 	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true) : AttributedFeatureModel = {
 	  reset() // Reset performance monitor
-	  start("Synthesis")
+	  top("Synthesis")
 	  
 	  // Extract the features, the attributes and their domains
-	  start("Domain extraction")
+	  top("Domain extraction")
 	  val columnDomains = extractColumnDomains(matrix, knowledge)
-	  stopLast()
+	  top()
 	  
-	  println("Domains")
-//	  columnDomains.foreach(d => println(d._1 + " => " + d._2))
-//	  println
-	
-	  start("Feature and attribute extraction")
+	  top("Feature and attribute extraction")
 	  val (features, attributes) = extractFeaturesAndAttributes(matrix, columnDomains, knowledge)
 	  val domains = (for (attribute <- attributes) yield {
 	    (attribute.name -> attribute.domain)
 	  }).toMap
-	  stopLast()
-	  
-	  println("Features")
-//	  features.foreach(println)
-	  println
-	  
-	  println("Attributes")
-//	  attributes.foreach(println)
-	  println
+	  top()
 	  
 	  // Compute binary implications
-	  start("Binary implications")
+	  top("Binary implications")
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
-//	  constraints.foreach(println)
-	  stopLast()
-	  
-	  println("Constraints")
-	  println(constraints.size)
-//	  constraints.foreach(println)
-	  println
+	  top()
 	  
 	  // Define the hierarchy
-	  start("Implication and Mutex graph")
+	  top("Implication and Mutex graph")
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
-	  stopLast()
+	  top()
 	  
-	  println("BIG")
-//	  println(big.toString())
-//	  println
-//	  val bigWriter = new FileWriter(new File("output/big.dot"))
-//	  bigWriter.write(big.toString())
-//	  bigWriter.close()
-
-	  println("Mutex graph")
-//	  println(mutexGraph)
-//	  println
-	  
-	  
-	  start("Hierarchy")
+	  top("Hierarchy")
 	  val hierarchy = extractHierarchy(big, knowledge)
-	  stopLast()
+	  top()
 	  
-	  println("Hierarchy")
-//	  println(hierarchy)
-//	  println()
-//	  val hWriter = new FileWriter(new File("output/h.dot"))
-//	  hWriter.write(hierarchy.toString())
-//	  hWriter.close()
-	  
-	  start("Place attributes")
+	  top("Place attributes")
 	  placeAttributes(features, attributes, constraints, knowledge)
-	  stopLast()
-	  
-	  println("Features with attributes")
-//	  features.foreach(println)
-	  println
+	  top()
 	  
 	  // Compute variability information
-
-	  start("Mandatory features")
+	  top("Mandatory features")
 	  val mandatoryRelations = computeMandatoryFeatures(big, hierarchy)
-	  stopLast()
+	  top()
 	  
-	  println("Mandatory relations")
-	  mandatoryRelations.foreach(println)
-	  println()
-	  
-	  start("Feature groups")
-	  start("Mutex")
+	  top("Feature groups")
+
+	  top("Mutex")
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
-	  stopLast()
-	  
+	  top()
 	  
 	  var (orGroups, xorGroups) = if (enableOrGroups) {
-	    start("Or")
+	    top("Or")
 	    val orG = computeOrGroups(matrix, hierarchy, features, knowledge)
-	    stopLast()
+	    top()
 	    
-	    start("Xor")
+	    top("Xor")
 	    val xorG = computeXOrGroups(mutexGroups, orG)
-	    stopLast()
+	    top()
 	    
 	    (orG, xorG)
 	    
 	  } else {
-	    start("Or")
+	    top("Or")
 	    // No computation of OR groups
-	    stopLast()
+	    top()
 	    
-	    start("Xor")
+	    top("Xor")
 	    val xorG = computeXOrGroupsAlternative(mutexGroups, matrix, knowledge)
-	    stopLast()
+	    top()
 	    (Nil, xorG)
 	  }
 	  
-	  start("Group processing")
+	  top("Group processing")
 	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
 	  mutexGroups = selectedGroups._1
 	  orGroups = selectedGroups._2
 	  xorGroups = selectedGroups._3
-	  stopLast()
+	  top()
 	  
-	  stopLast() // End feature group computation
-	  
-	  println("Mutex groups")
-	  mutexGroups.foreach(println)
-	  println()
-	  
-	  println("Or groups")
-	  orGroups.foreach(println)
-	  println()
-	  
-	  println("Xor groups")
-	  xorGroups.foreach(println)
-	  println() 
-	  
-	  
+	  top() // End feature group computation
 	  
 	  // Compute constraints
-	  start("Cross tree constraints")
-	  start("Binary implies")
+	  top("Cross tree constraints")
+	  top("Binary implies")
 	  val implies = computeCrossTreeImplications(hierarchy, big, mandatoryRelations)
-	  stopLast()
+	  top()
 	  
-	  start("Binary excludes")
+	  top("Binary excludes")
 	  val excludes = computeCrossTreeExcludes(mutexGraph, mutexGroups, xorGroups)
-	  stopLast()
+	  top()
 	  
 	  
-	  start("Complex constraints")
+	  top("Complex constraints")
 	  val complexConstraints = computeComplexCrossTreeConstraints(constraints)
-	  stopLast()
+	  top()
 	  val rc = implies ::: excludes ::: complexConstraints
-	  stopLast()
-	  
-	  println("Constraints")
-	  println(rc.size)
-//	  rc.foreach(println)
-	  println()
+	  top()
 	  
 	  // Create the attributed feature model
-	  start("AFM construction")
+	  top("AFM construction")
 	  val afd = new AttributedFeatureDiagram(features, hierarchy, mandatoryRelations, mutexGroups, orGroups, xorGroups, rc)
 	  val phi = None
 	  val afm = new AttributedFeatureModel(afd, phi)
-	  stopLast()
+	  top()
 	  
-	  stopLast() // End synthesis
+	  top() // End synthesis
 	  afm
 	}
 
@@ -309,6 +244,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  // Write converted matrix to CSV
 	  val convertedMatrixFile = //File.createTempFile("afmsynthesis_", ".csv")
 	    new File("output/convertedMatrix.csv")
+	  val resultFile = new File("output/results.txt")
 	  val writer = new CSVWriter(new FileWriter(convertedMatrixFile))
 	  writer.writeRow(convertedMatrix.labels)
 	  convertedMatrix.configurations.foreach(writer.writeRow(_))
@@ -325,26 +261,24 @@ class AFMSynthesizer extends PerformanceMonitor {
 	      "--goal", 
 	      "main.", 
 	      "-a", 
-	      convertedMatrixFile.getAbsolutePath(), 
-	      "output/results.txt")
+	      convertedMatrixFile.getAbsolutePath(),
+	      resultFile.getAbsolutePath()
+	      )
 	      
+//	  val ioHandler = ProcessLogger(stdout => {println(stdout)}, stderr => {println(stderr)})
 	  val ioHandler = ProcessLogger(stdout => {}, stderr => {})
-	  start("Sicstus")
+	  top("Sicstus")
 	  val commandResult = reasonerCommand ! ioHandler
-	  stopLast()
+	  top()
 	  assert(commandResult == 0, {convertedMatrixFile.delete(); "Something went wrong with Sicstus program"})
 
-	  // Delete converted matrix file
-//	  convertedMatrixFile.delete()
-
-	  
 	  // Parse the output of the reasoner  
 	  // and convert it to a list of constraints over the features and attributes
 	  val invertedDictionaries = dictionaries.map((kv) => (kv._1 -> kv._2.map(_.swap)))
 	  
 	  val pattern = Pattern.compile("Feat(\\d+)\\s=\\s(\\d+)\\s=>\\sFeat(\\d+)\\sin\\s\\[(.*)\\]\\sand\\snot\\sin\\s\\[(.*)\\]")
 	  
-	  val constraints = for (line <- Source.fromFile("output/results.txt").getLines) yield {
+	  val constraints = for (line <- Source.fromFile(resultFile).getLines) yield {
 	    val matcher = pattern.matcher(line)
 	    if (matcher.matches()) {
 	    	
@@ -375,6 +309,10 @@ class AFMSynthesizer extends PerformanceMonitor {
 	    	None
 	    }
 	  }
+	  
+	  // Delete temporary files
+//	  convertedMatrixFile.delete()
+//	  resultFile.delete()
 	  
 	  constraints.flatten.toList
 	}
@@ -535,6 +473,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	: List[OrGroup] = {
 	  
 	  // Convert matrix to DNF
+	  top("Conversion to DNF")
 	  val variables = features.map(feature => matrix.labels.indexOf(feature.name))  
 	  
 	  val clauses = for (configuration <- matrix.configurations) yield {
@@ -555,8 +494,10 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  }
 	  
 	  val dnf = new DNF(clauses)
+	  top()
 	  
 	  // Compute Or groups
+	  top("Compute")
 	  val orGroups = ListBuffer.empty[OrGroup]
 	  for (variable <- variables) {
 	    val computedOrGroups = dnf.getOrGroups(variable)
@@ -577,7 +518,8 @@ class AFMSynthesizer extends PerformanceMonitor {
 	      
 	    }
 	  }
- 
+	  top()
+	  
 	  orGroups.toList
 	}
 	

@@ -139,7 +139,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           	}
           	val rightString = attributeToFama(attribute) + " <= " + max
           	val constraintString = leftString +  " IMPLIES " + rightString
-          	println(constraintString)
+//          	println(constraintString)
           	Some(new ComplexConstraint(constraintString))
         case _ => None
       }
