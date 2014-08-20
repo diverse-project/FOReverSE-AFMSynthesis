@@ -50,11 +50,12 @@ import foreverse.afmsynthesis.afm.constraint.Implies
 import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.Domain
 import foreverse.afmsynthesis.afm.constraint.LessOrEqual
+import scala.util.Random
 
 class AFMSynthesizer extends PerformanceMonitor {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true) : AttributedFeatureModel = {
 	  reset() // Reset performance monitor
 	  start("Synthesis")
 	  
@@ -144,13 +145,28 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
 	  stopLast()
 	  
-	  start("Or")
-	  var orGroups = computeOrGroups(matrix, hierarchy, features, knowledge)
-	  stopLast()
 	  
-	  start("Xor")
-	  var xorGroups = computeXOrGroups(mutexGroups, orGroups)
-	  stopLast()
+	  var (orGroups, xorGroups) = if (enableOrGroups) {
+	    start("Or")
+	    val orG = computeOrGroups(matrix, hierarchy, features, knowledge)
+	    stopLast()
+	    
+	    start("Xor")
+	    val xorG = computeXOrGroups(mutexGroups, orG)
+	    stopLast()
+	    
+	    (orG, xorG)
+	    
+	  } else {
+	    start("Or")
+	    // No computation of OR groups
+	    stopLast()
+	    
+	    start("Xor")
+	    val xorG = computeXOrGroupsAlternative(mutexGroups, matrix, knowledge)
+	    stopLast()
+	    (Nil, xorG)
+	  }
 	  
 	  start("Group processing")
 	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
@@ -566,7 +582,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	}
 	
 	/**
-	 * Compute all possible Xor groups
+	 * Compute all possible Xor groups based on the computation of mutex and or groups
 	 */
 	def computeXOrGroups(mutexGroups : List[MutexGroup], orGroups : List[OrGroup]) : List[XorGroup] = {
 	  val xorGroups = ListBuffer.empty[XorGroup]
@@ -577,7 +593,36 @@ class AFMSynthesizer extends PerformanceMonitor {
 	      xorGroups += XorGroup(mtxG.parent, mtxG.children)
 	    }
 	  }
+	  
 	    
+	  xorGroups.toList
+	}
+	
+	/**
+	 * Compute all possible Xor groups based on the computation of mutex groups only
+	 */
+	def computeXOrGroupsAlternative(mutexGroups : List[MutexGroup], matrix : ConfigurationMatrix, knowledge : DomainKnowledge) = {
+	  val xorGroups = ListBuffer.empty[XorGroup]
+	  
+	  for (mtxG <- mutexGroups) {
+	      val parent = mtxG.parent
+	      val children = mtxG.children
+	      val labels = matrix.labels
+	      val parentIndex = labels.indexOf(parent.name)
+	      val childrenIndexes = children.map(c => (c -> labels.indexOf(c.name))).toMap
+	      
+	      // Check that there is no configuration with the parent but no children
+	      // In that case, the mutex group is a Xor groups
+	      val isXor = !matrix.configurations.exists(configuration =>
+	      	knowledge.isTrue(parent, configuration(parentIndex)) 
+	      	&& children.forall(child => !knowledge.isTrue(child, configuration(childrenIndexes(child))))
+	      )
+	      
+	      if (isXor) {
+	        xorGroups += XorGroup(parent, children)
+	      }
+	    }
+	  
 	  xorGroups.toList
 	}
 	
@@ -704,8 +749,9 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  def findMax(domain : Domain, values : Set[String]) : Option[String] =  {
 	    val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
 	    val sortedValues = values.toList.sortWith(domain.lessThan)
-	    if (sortedDomainValues.startsWith(sortedValues)) {
-	      Some(sortedValues.last)
+	    val max = sortedValues.last
+	    if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
+	      Some(max)
 	    } else {
 	      None
 	    }
