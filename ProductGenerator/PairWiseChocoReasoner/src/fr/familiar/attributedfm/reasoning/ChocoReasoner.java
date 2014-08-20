@@ -17,31 +17,11 @@
  */
 package fr.familiar.attributedfm.reasoning;
 
-import static choco.Choco.and;
-import static choco.Choco.constant;
-import static choco.Choco.div;
-import static choco.Choco.eq;
-import static choco.Choco.geq;
-import static choco.Choco.gt;
-import static choco.Choco.ifOnlyIf;
-import static choco.Choco.ifThenElse;
-import static choco.Choco.implies;
-import static choco.Choco.leq;
-import static choco.Choco.lt;
-import static choco.Choco.makeIntVar;
-import static choco.Choco.minus;
-import static choco.Choco.mod;
-import static choco.Choco.mult;
-import static choco.Choco.neg;
-import static choco.Choco.neq;
-import static choco.Choco.not;
-import static choco.Choco.or;
-import static choco.Choco.plus;
-import static choco.Choco.power;
-import static choco.Choco.sum;
+import static choco.Choco.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -52,14 +32,11 @@ import java.util.SortedSet;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import javax.sound.midi.SysexMessage;
-
 import choco.cp.model.CPModel;
 import choco.kernel.model.Model;
 import choco.kernel.model.constraints.Constraint;
 import choco.kernel.model.variables.integer.IntegerExpressionVariable;
 import choco.kernel.model.variables.integer.IntegerVariable;
-import es.us.isa.ChocoReasoner.pairwise.Pair;
 import fr.familiar.attributedfm.Configuration;
 import fr.familiar.attributedfm.Feature;
 import fr.familiar.attributedfm.GenericAttribute;
@@ -67,7 +44,6 @@ import fr.familiar.attributedfm.Relation;
 import fr.familiar.attributedfm.VariabilityElement;
 import fr.familiar.attributedfm.domain.Cardinality;
 import fr.familiar.attributedfm.domain.Domain;
-import fr.familiar.attributedfm.domain.IntegerDomain;
 import fr.familiar.attributedfm.domain.KeyWords;
 import fr.familiar.attributedfm.domain.ObjectDomain;
 import fr.familiar.attributedfm.domain.Range;
@@ -80,7 +56,7 @@ import fr.familiar.attributedfm.util.Tree;
 public class ChocoReasoner extends FeatureModelReasoner {
 
 	protected Map<String, Feature> features;
-	protected Map<String, IntegerVariable> variables;
+	public Map<String, IntegerVariable> variables;
 	protected Map<String, fr.familiar.attributedfm.GenericAttribute> atts;
 	protected Map<String, IntegerVariable> attVars;
 	protected Map<String, Constraint> dependencies;
@@ -287,6 +263,9 @@ public class ChocoReasoner extends FeatureModelReasoner {
 				}else{
 					attVar = makeIntVar(attName, min, max, "cp:bound");
 				}
+				attVars.put(attName, attVar);
+				atts.put(attName, att);
+				problem.addVariable(attVar);
 			} else if (d instanceof SetIntegerDomain) {
 				intNullVal = att.getIntegerValue(nullValue);
 
@@ -296,19 +275,25 @@ public class ChocoReasoner extends FeatureModelReasoner {
 				allowedVals.add(intNullVal);
 				// attVar = makeIntVar(attName,
 				// allowedVals,"cp:bound","cp:no_decision");
-				int[] valsArray = new int[allowedVals.size()];
-				Iterator<Integer> itValues = allowedVals.iterator();
-				int i = 0;
-				while (itValues.hasNext()) {
-					valsArray[i] = itValues.next();
-					i++;
-				}
-				// attVar = makeIntVar(attName,
-				// allowedVals,"cp:bound","cp:no_decision");
+				int min=Collections.min(allowedVals);
+				int max=Collections.max(allowedVals);
+				
+			
+
 				if(att.nonDesicion){
-					attVar = makeIntVar(attName, valsArray, "cp:enum","cp:no_decision");
+					attVar = makeIntVar(attName, min,max,"cp:bound","cp:no_decision");
 				}else{
-					attVar = makeIntVar(attName, valsArray, "cp:enum");
+					attVar = makeIntVar(attName, min,max,"cp:bound");
+					
+				}
+				attVars.put(attName, attVar);
+				atts.put(attName, att);
+				problem.addVariable(attVar);
+				for(int i=min;i<max;i++){
+					if(!allowedVals.contains(i)){
+						Constraint c=neq(attVar,i);
+						problem.addConstraint(c);
+					}
 				}
 			} else if (d instanceof ObjectDomain) {
 				intNullVal = att.getIntegerValue(nullValue);
@@ -327,19 +312,19 @@ public class ChocoReasoner extends FeatureModelReasoner {
 				// allowedVals,"cp:bound","cp:no_decision");
 				if(att.nonDesicion){
 
-				attVar = makeIntVar(attName, valsArray, "cp:enum","cp:no_decision");
+					attVar = makeIntVar(attName, valsArray, "cp:enum","cp:no_decision");
 				}else{
 					attVar = makeIntVar(attName, valsArray, "cp:enum");
 				}
+				attVars.put(attName, attVar);
+				atts.put(attName, att);
+				problem.addVariable(attVar);
 			} else if (d instanceof SetRealDomain) {
 				System.err.println("We do not support reals by now");
 			} else {
 				System.err.println("Unknown rare domain type");
 			}
-			// a?????????adimos la IntegerVariable
-			attVars.put(attName, attVar);
-			atts.put(attName, att);
-			problem.addVariable(attVar);
+			
 
 			// si la feature esta presente, tenemos en cuenta el dominio. si no,
 			// valor nulo

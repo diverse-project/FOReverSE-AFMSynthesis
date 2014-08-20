@@ -17,6 +17,7 @@ import choco.kernel.solver.ContradictionException
 import es.us.isa.FAMA.parser.FMFParser
 import fr.familiar.attributedfm.reasoning.ChocoReasoner
 import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.fileformats.AttributedReader
+import choco.cp.solver.search.integer.varselector.MinDomain
 
 class FAMAGenerator extends FlatSpec with Matchers {
 
@@ -30,20 +31,20 @@ class FAMAGenerator extends FlatSpec with Matchers {
    
    val famaParser = new AttributedReader()
    val model = famaParser.parseFile(inputFile.getAbsolutePath)
-   
    val reasoner = new ChocoReasoner()
    val solver = new CPSolver()
-   
+
    model.transformto(reasoner)
    val prob = reasoner.getProblem
    solver.read(prob)
+   solver.setVarIntSelector(new MinDomain(solver));
+   
    solver.propagate()
-   
-   
    var nbSolutions = 0
    if (solver.solve() == true && solver.isFeasible) {
      do {
        val product = collection.mutable.Map.empty[String, String]
+
        for (i <- 0 until prob.getNbIntVars) {
          val aux = solver.getVar(prob.getIntVar(i))
          val name = aux.getName
@@ -95,21 +96,21 @@ class FAMAGenerator extends FlatSpec with Matchers {
 		  val outputName = inputName.substring(0, inputName.length - 4) + ".csv"
 		  val outputFile = new File(dir.getAbsolutePath() + "/" + outputName)
 		  println("Generating products for " + inputName)
-		  try {
-		    val generation : Future[Unit] = future {
+//		  try {
+//		    val generation : Future[Unit] = future {
 			  generateProducts(inputFile, outputFile)
-	  		}
-		  	Await.result(generation, 2.minutes)
-		  } catch {
-		    case e : ContradictionException => {
-		      println("contradiction")
-		      inputFile.delete()
-		    } 
-		    case e : TimeoutException => {
-		      println("timeout")
-		      outputFile.delete()
-		    } 
-		  }
+//	  		}
+//		  	Await.result(generation, 2.minutes)
+//		  } catch {
+//		    case e : ContradictionException => {
+//		      println("contradiction")
+//		      inputFile.delete()
+//		    } 
+//		    case e : TimeoutException => {
+//		      println("timeout")
+//		      outputFile.delete()
+//		    } 
+//		  }
 		  
 	  }
 
