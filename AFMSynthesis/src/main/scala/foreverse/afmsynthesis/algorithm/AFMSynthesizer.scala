@@ -51,6 +51,8 @@ import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.Domain
 import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 import scala.util.Random
+import foreverse.afmsynthesis.afm.OrGroup
+import java.util.HashSet
 
 class AFMSynthesizer extends PerformanceMonitor {
   
@@ -467,58 +469,93 @@ class AFMSynthesizer extends PerformanceMonitor {
 	
 	
 	/**
-	 * Compute all possible or groups
+	 * Compute all possible or groups with prime implicates (She et al., 2014)
 	 */
 	def computeOrGroups(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : DomainKnowledge) 
 	: List[OrGroup] = {
 	  
 	  // Convert matrix to DNF
 	  top("Conversion to DNF")
-	  val variables = features.map(feature => matrix.labels.indexOf(feature.name))  
+	  
+	  val variables = features.map(feature => {
+	    val index = matrix.labels.indexOf(feature.name)
+	    val variable = index + 1  // a variable must not be equal to 0
+	    (feature, index, variable)  
+	  })
 	  
 	  val clauses = for (configuration <- matrix.configurations) yield {
 		  val clause = new Array[Int](variables.size)
-		  for ((variable, index) <- variables.zipWithIndex) {
-			  val valueIsTrue = knowledge.isTrue(features(index), configuration(variable))
+		  
+		  for (((feature, index, variable), clauseIndex) <- variables.zipWithIndex) {
+			  val valueIsTrue = knowledge.isTrue(feature, configuration(index))
 			  
-			  // a literal must not be equal to 0
 			  val literal = if (valueIsTrue) {
-			    variable + 1
+			    variable
 			  }  else {
-			    - (variable + 1)
+			    - variable
 			  }
-			  clause(index) = literal
+			  clause(clauseIndex) = literal
 		  }
 
 		  new DNFClause(clause)
 	  }
 	  
 	  val dnf = new DNF(clauses)
+	  
 	  top()
 	  
 	  // Compute Or groups
 	  top("Compute")
 	  val orGroups = ListBuffer.empty[OrGroup]
-	  for (variable <- variables) {
-	    val computedOrGroups = dnf.getOrGroups(variable)
-	    
+	  for ((parent, index, variable) <- variables) {
+	    val children = hierarchy.children(parent)
+	    println(parent + " : " + children)
+	    val reducedDNF = reduceDNF(dnf, parent, children.toSet, variables)
+	    print("computing...")
+	    val computedOrGroups = reducedDNF.getOrGroups(variable)
+	    println(" done")
 	    for (orGroup <- computedOrGroups) {
 	      val literals = orGroup.getLiterals()
-	      val children = for (literal <- literals) yield {
-	        val label = matrix.labels(literal.toInt.abs - 1)
+	      val groupChildren = for (literal <- literals) yield {
+	        val featureIndex = literal.toInt.abs - 1
+	        val label = matrix.labels(featureIndex)
 	        val feature = features.find(_.name == label).get
 	        feature
 	      }
-	      val parent = features.find(_.name == matrix.labels(variable)).get
 	      
 	      // Filter groups that are not possible with this hierarchy
-	      if (hierarchy.children(parent).containsAll(children)) {
-	    	  orGroups += OrGroup(parent, children.toSet)
+	      if (children.containsAll(groupChildren)) {
+	    	  orGroups += OrGroup(parent, groupChildren.toSet)
 	      }
 	      
 	    }
 	  }
 	  top()
+	  
+	  orGroups.toList
+	}
+	
+	/**
+	 * Reduce DNF formula by removing all variables that are not the parent or its children
+	 */
+	def reduceDNF(dnf : DNF, parent : Feature, children : Set[Feature], variables : List[(Feature, Int, Int)]) : DNF = {
+	  val unrelatedVariables = new HashSet[Integer] 
+	  
+	  for ((feature, index, variable) <- variables) yield {
+	    if (feature != parent && !children.contains(feature)) {
+	      unrelatedVariables.add(variable)
+	    }
+	  }
+	  dnf.eliminateVariables(unrelatedVariables)
+	}
+	
+	/**
+	 * Compute Or groups by brute force
+	 */
+	def computeOrGroupsAlternative(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : DomainKnowledge)
+	: List[OrGroup] = {
+	  val orGroups = ListBuffer.empty[OrGroup]
+	  
 	  
 	  orGroups.toList
 	}

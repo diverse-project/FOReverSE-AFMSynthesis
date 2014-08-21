@@ -45,6 +45,14 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		writer.write(afm, outputFile)
 		
 		println()
+		println("Results")
+		println("Mutex")
+		afm.diagram.mutexGroups.foreach(println)
+		println("Or")
+		afm.diagram.orGroups.foreach(println)
+		println("Xor")
+		afm.diagram.xorGroups.foreach(println)
+		
 		println("Performances")
 		for ((tag, time) <- synthesizer.getTimes) {
 		  println(tag + ": " + time + " ms")
@@ -56,7 +64,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 
   "AFM synthesis algorithm" should "synthesize AFM from the test set" in {
 	val dir = new File(INPUT_DIR)
-	synthesizeAFMFromDir(dir, false, false, _ => "root")
+	synthesizeAFMFromDir(dir, true, false, _ => "root")
   }
   
   
@@ -112,8 +120,8 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   "Random matrix generator" should "generate random matrices" in {
     val nbMatrices = 10
-    val nbVariables = 10
-    val nbConfigurations = 100000
+    val nbVariables = 100
+    val nbConfigurations = 100
     val maximumDomainSize = 5
     
     val random = new Random
