@@ -24,34 +24,33 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.AttributedFeature;
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.FAMAAttributedFeatureModel;
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.Relation;
-import es.us.isa.FAMA.models.domain.Domain;
-import es.us.isa.FAMA.models.domain.ObjectDomain;
-import es.us.isa.FAMA.models.domain.Range;
-import es.us.isa.FAMA.models.domain.RangeIntegerDomain;
-import es.us.isa.FAMA.models.domain.SetIntegerDomain;
-import es.us.isa.FAMA.models.featureModel.Cardinality;
-import es.us.isa.FAMA.models.featureModel.Constraint;
-import es.us.isa.FAMA.models.featureModel.extended.GenericAttribute;
-import es.us.isa.FAMA.models.variabilityModel.VariabilityModel;
 import es.us.isa.FAMA.models.variabilityModel.parsers.IWriter;
+import fr.familiar.attributedfm.AttributedFeatureModel;
+import fr.familiar.attributedfm.Constraint;
+import fr.familiar.attributedfm.Feature;
+import fr.familiar.attributedfm.GenericAttribute;
+import fr.familiar.attributedfm.Relation;
+import fr.familiar.attributedfm.domain.Cardinality;
+import fr.familiar.attributedfm.domain.Domain;
+import fr.familiar.attributedfm.domain.ObjectDomain;
+import fr.familiar.attributedfm.domain.Range;
+import fr.familiar.attributedfm.domain.RangeIntegerDomain;
+import fr.familiar.attributedfm.domain.SetIntegerDomain;
 
 public class AttributedWriter implements IWriter {
 
 	private BufferedWriter writer = null;
-	private FAMAAttributedFeatureModel fm = null;
+	private AttributedFeatureModel fm = null;
 	private Collection<String> relationshipsCol = new ArrayList<String>();
 	private Collection<String> attributesCol = new ArrayList<String>();
 	private Collection<String> constraintsCol = new ArrayList<String>();
-	private Collection<AttributedFeature> usedFeats = new ArrayList<AttributedFeature>();
+	private Collection<Feature> usedFeats = new ArrayList<Feature>();
 
-	public void writeFile(String fileName, VariabilityModel vm)
+	public void writeFile(String fileName, AttributedFeatureModel vm)
 			throws Exception {
 
 		File file = new File(fileName);
-		fm = (FAMAAttributedFeatureModel) vm;
+		fm = vm;
 
 		writer = new BufferedWriter(new FileWriter(file));
 
@@ -69,7 +68,7 @@ public class AttributedWriter implements IWriter {
 			writer.write("\n");// blank
 		}
 		
-		if (attributesCol.size() > 1 || constraintsCol.size() > 1) {
+		if (attributesCol.size() > 1) {
 			while (attColIt.hasNext()) {
 				writer.write(attColIt.next());
 				writer.write("\n");// blank
@@ -112,7 +111,7 @@ public class AttributedWriter implements IWriter {
 		// las constrainsts aparte// recorrido del ast
 	}
 
-	private void recursiveWay(AttributedFeature feat) {
+	private void recursiveWay(Feature feat) {
 		// Pillamos los atributos de la feature
 		usedFeats.add(feat);
 		Iterator<GenericAttribute> attIt = feat.getAttributes().iterator();
@@ -172,17 +171,17 @@ public class AttributedWriter implements IWriter {
 			String relsStr = feat.getName() + " : ";
 			while (relIt.hasNext()) {
 				Relation rel = relIt.next();
-				Iterator<AttributedFeature> destIt = rel.getDestination();
+				Iterator<Feature> destIt = rel.getDestination();
 
 				if (rel.isMandatory() && rel.getNumberOfDestination() == 1) {
 					while (destIt.hasNext()) {
-						AttributedFeature dest = destIt.next();
+						Feature dest = destIt.next();
 						relsStr += " " + dest.getName() + " ";
 
 					}
 				} else if (rel.isOptional() && rel.getNumberOfDestination() == 1) {
 					while (destIt.hasNext()) {
-						AttributedFeature dest = destIt.next();
+						Feature dest = destIt.next();
 						relsStr += "[" + dest.getName() + "] ";
 
 					}
@@ -198,7 +197,7 @@ public class AttributedWriter implements IWriter {
 					}
 					relsStr += "] {";
 					while (destIt.hasNext()) {
-						AttributedFeature dest = destIt.next();
+						Feature dest = destIt.next();
 						relsStr += dest.getName() + " ";
 
 					}
@@ -212,9 +211,9 @@ public class AttributedWriter implements IWriter {
 			while (relIt.hasNext()) {
 				Relation rel = relIt.next();
 
-				Iterator<AttributedFeature> destIt = rel.getDestination();
+				Iterator<Feature> destIt = rel.getDestination();
 				while (destIt.hasNext()) {
-					AttributedFeature dest = destIt.next();
+					Feature dest = destIt.next();
 
 					if (!usedFeats.contains(dest)) {
 						recursiveWay(dest);

@@ -3,13 +3,6 @@ package foreverse.afmsynthesis.writer
 import java.io.File
 import java.util.HashSet
 import scala.collection.JavaConversions.asScalaSet
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.AttributedFeature
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ExcludesDependency
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.FAMAAttributedFeatureModel
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.RequiresDependency
-import es.us.isa.FAMA.models.domain.SetIntegerDomain
-import es.us.isa.FAMA.models.featureModel.Cardinality
-import es.us.isa.FAMA.models.featureModel.extended.GenericAttribute
 import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
 import foreverse.afmsynthesis.afm.AttributedFeatureModel
 import foreverse.afmsynthesis.afm.Feature
@@ -20,23 +13,31 @@ import foreverse.afmsynthesis.afm.OrGroup
 import foreverse.afmsynthesis.afm.XorGroup
 import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.constraint.Implies
-import es.us.isa.FAMA.models.FAMAAttributedfeatureModel.ComplexConstraint
 import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 import foreverse.afmsynthesis.afm.constraint.Not
 import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.Attribute
+import fr.familiar.attributedfm.domain.SetIntegerDomain
+import fr.familiar.attributedfm.GenericAttribute
+import foreverse.afmsynthesis.afm.constraint.Implies
+import fr.familiar.attributedfm.ExcludesDependency
+import fr.familiar.attributedfm.ComplexConstraint
+import fr.familiar.attributedfm.RequiresDependency
+import foreverse.afmsynthesis.afm.constraint.Equal
+import foreverse.afmsynthesis.afm.constraint.Excludes
+import foreverse.afmsynthesis.afm.constraint.Not
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 
   override def write(afm : AttributedFeatureModel, file : File) {
-	  val famaAFM = new FAMAAttributedFeatureModel
+	  val famaAFM = new fr.familiar.attributedfm.AttributedFeatureModel
 
 	  // Create FAMA features
 	  val afd = afm.diagram
-	  val afmToFAMA = afd.features.map(f => (f -> new AttributedFeature)).toMap
-	  for ((feature, famaFeature) <- afmToFAMA) {
-	    famaFeature.setName(feature.name)
-	  }
+	  val afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(f.name))).toMap
+//	  for ((feature, famaFeature) <- afmToFAMA) {
+//	    famaFeature.setName(feature.name)
+//	  }
 	  
 	  writeHierarchy(afd, famaAFM, afmToFAMA)
 	  writeAttributes(afd, famaAFM, afmToFAMA)
@@ -47,7 +48,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 	  writer.writeFile(file.getAbsolutePath(), famaAFM)
   }
   
-  private def writeHierarchy(afd : AttributedFeatureDiagram, famaAFM : FAMAAttributedFeatureModel, afmToFAMA : Map[Feature, AttributedFeature]) {
+  private def writeHierarchy(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     
     val hierarchy = afd.hierarchy
     val relations = afd.mandatoryRelations ::: 
@@ -65,7 +66,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
     
     // Set relations
     for (relation <- relations) {
-      val famaRelation = new es.us.isa.FAMA.models.FAMAAttributedfeatureModel.Relation
+      val famaRelation = new fr.familiar.attributedfm.Relation
       afmToFAMA(relation.parent).addRelation(famaRelation)
       relation.children.foreach(c => famaRelation.addDestination(afmToFAMA(c))) 
       
@@ -77,7 +78,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
         case XorGroup(_,_) => (1, 1)
       }
 //      println(relation.parent + " / " + relation.children + " : " + cardInf + ", " + cardSup)
-      famaRelation.addCardinality(new Cardinality(cardInf, cardSup))
+      famaRelation.addCardinality(new fr.familiar.attributedfm.domain.Cardinality(cardInf, cardSup))
     }
     
     // Set optional relations if there were not already added
@@ -86,10 +87,10 @@ class ModelBasedFAMAWriter extends FAMAWriter {
         val parent = hierarchy.parents(feature).head
         val famaParent = afmToFAMA(parent)
         
-        val famaRelation = new es.us.isa.FAMA.models.FAMAAttributedfeatureModel.Relation
+        val famaRelation = new fr.familiar.attributedfm.Relation
         famaRelation.addDestination(famaFeature)
         famaParent.addRelation(famaRelation)
-        famaRelation.addCardinality(new Cardinality(0, 1))
+        famaRelation.addCardinality(new fr.familiar.attributedfm.domain.Cardinality(0, 1))
         
       }
     }
@@ -98,7 +99,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
      
   }
   
-  private def writeAttributes(afd : AttributedFeatureDiagram, famaAFM : FAMAAttributedFeatureModel, afmToFAMA : Map[Feature, AttributedFeature]) {
+  private def writeAttributes(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     for ((feature, famaFeature) <- afmToFAMA) {
     	for (attribute <- feature.attributes) {
     	  val name = attribute.name
@@ -117,7 +118,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
     }
   }
   
-  private def writeConstraints(afd : AttributedFeatureDiagram, famaAFM : FAMAAttributedFeatureModel, afmToFAMA : Map[Feature, AttributedFeature]) {
+  private def writeConstraints(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
 
     def attributeToFama(attribute : Attribute) : String = {
       val feature = afd.features.find(_.attributes.contains(attribute))

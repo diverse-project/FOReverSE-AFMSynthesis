@@ -509,11 +509,10 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  val orGroups = ListBuffer.empty[OrGroup]
 	  for ((parent, index, variable) <- variables) {
 	    val children = hierarchy.children(parent)
-	    println(parent + " : " + children)
+
 	    val reducedDNF = reduceDNF(dnf, parent, children.toSet, variables)
-	    print("computing...")
 	    val computedOrGroups = reducedDNF.getOrGroups(variable)
-	    println(" done")
+	    
 	    for (orGroup <- computedOrGroups) {
 	      val literals = orGroup.getLiterals()
 	      val groupChildren = for (literal <- literals) yield {
@@ -548,17 +547,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  }
 	  dnf.eliminateVariables(unrelatedVariables)
 	}
-	
-	/**
-	 * Compute Or groups by brute force
-	 */
-	def computeOrGroupsAlternative(matrix : ConfigurationMatrix, hierarchy : ImplicationGraph[Feature], features : List[Feature], knowledge : DomainKnowledge)
-	: List[OrGroup] = {
-	  val orGroups = ListBuffer.empty[OrGroup]
-	  
-	  
-	  orGroups.toList
-	}
+
 	
 	/**
 	 * Compute all possible Xor groups based on the computation of mutex and or groups

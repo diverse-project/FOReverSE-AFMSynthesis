@@ -96,21 +96,21 @@ class FAMAGenerator extends FlatSpec with Matchers {
 		  val outputName = inputName.substring(0, inputName.length - 4) + ".csv"
 		  val outputFile = new File(dir.getAbsolutePath() + "/" + outputName)
 		  println("Generating products for " + inputName)
-//		  try {
+		  try {
 //		    val generation : Future[Unit] = future {
 			  generateProducts(inputFile, outputFile)
 //	  		}
 //		  	Await.result(generation, 2.minutes)
-//		  } catch {
-//		    case e : ContradictionException => {
-//		      println("contradiction")
-//		      inputFile.delete()
-//		    } 
+		  } catch {
+		    case e : ContradictionException => {
+		      println("contradiction")
+		      inputFile.delete()
+		    } 
 //		    case e : TimeoutException => {
 //		      println("timeout")
 //		      outputFile.delete()
 //		    } 
-//		  }
+		  }
 		  
 	  }
 

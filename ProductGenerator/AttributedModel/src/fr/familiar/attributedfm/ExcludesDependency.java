@@ -43,7 +43,7 @@ public class ExcludesDependency extends Dependency {
 	}
 	
 	public String toString() {
-		String res = origin.getName() + " excludes " + destination.getName();
+		String res = origin.getName() + " EXCLUDES " + destination.getName();
 		return res;
 	}
 

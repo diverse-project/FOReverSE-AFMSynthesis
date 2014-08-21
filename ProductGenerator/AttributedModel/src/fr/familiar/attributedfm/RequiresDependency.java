@@ -42,7 +42,7 @@ public class RequiresDependency extends Dependency {
 	}
 	
 	public String toString() {
-		String res = origin.getName() + " requires " + destination.getName();
+		String res = origin.getName() + " REQUIRES " + destination.getName();
 		return res;
 	}
 

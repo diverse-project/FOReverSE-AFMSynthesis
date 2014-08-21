@@ -7,6 +7,8 @@ import scala.collection.mutable.ListBuffer
 import foreverse.ksynthesis.mst.OptimumBranchingFinder
 import scala.collection.JavaConversions._
 import gsd.graph.SimpleEdge
+import foreverse.ksynthesis.metrics.RandomMetric
+import scala.util.Random
 
 class SimpleDomainKnowledge extends DomainKnowledge {
 
@@ -57,6 +59,13 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     }
     wbig.removeAllEdges(edgesToRemove)
     
+    // Set random weights
+    val random = new Random
+    for (edge <- wbig.edges()) {
+      wbig.setEdgeWeight(edge, random.nextDouble)
+    }
+
+    // Find a hierarchy
     hierarchyFinder.findOptimumBranching(wbig)
   }
   

@@ -59,7 +59,7 @@ class BettyGenerator extends FlatSpec with Matchers {
 	  val afmGenerator = new RandomAttributedFMGenerationTest
 	  for (i <- 0 until 10) {
 	    val generation : Future[(FAMAAttributedFeatureModel, Long)] = future {
-		  generateModel(50, 20, 5, 0, 3, 2)
+		  generateModel(10, 20, 5, 0, 3, 1)
 	  	}
 		
 	    val result = try {

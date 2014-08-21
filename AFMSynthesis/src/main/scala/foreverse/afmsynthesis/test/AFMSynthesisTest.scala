@@ -1,23 +1,18 @@
 package foreverse.afmsynthesis.test
 
+import java.io.File
+
+import scala.Array.canBuildFrom
+import scala.util.Random
+
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import java.io.File
-import scala.io.Source
-import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
-import foreverse.afmsynthesis.algorithm.AFMSynthesizer
-import foreverse.afmsynthesis.afm.DomainKnowledge
-import com.github.tototoshi.csv.CSVReader
-import java.io.BufferedReader
-import java.io.FileReader
-import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
-import foreverse.afmsynthesis.writer.FAMAWriter
-import scala.util.Random
-import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
-import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
-import foreverse.afmsynthesis.writer.TextualFAMAWriter
-import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
+
 import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
+import foreverse.afmsynthesis.algorithm.AFMSynthesizer
+import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
+import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
+import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -121,7 +116,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   "Random matrix generator" should "generate random matrices" in {
     val nbMatrices = 10
     val nbVariables = 100
-    val nbConfigurations = 100
+    val nbConfigurations = 10
     val maximumDomainSize = 5
     
     val random = new Random
