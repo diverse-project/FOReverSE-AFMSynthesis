@@ -40,16 +40,14 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		writer.write(afm, outputFile)
 		
 		println()
-		println("Results")
-		println("Mutex")
-		afm.diagram.mutexGroups.foreach(println)
-		println("Or")
-		afm.diagram.orGroups.foreach(println)
-		println("Xor")
-		afm.diagram.xorGroups.foreach(println)
+		println("Metrics")
+		for ((name, value) <- synthesizer.metrics) {
+		  println(name + " = " + value)
+		}
 		
+		println()
 		println("Performances")
-		for ((tag, time) <- synthesizer.getTimes) {
+		for ((tag, depth, time) <- synthesizer.getTimes) {
 		  println(tag + ": " + time + " ms")
 		}
 		println("----------------------------------");

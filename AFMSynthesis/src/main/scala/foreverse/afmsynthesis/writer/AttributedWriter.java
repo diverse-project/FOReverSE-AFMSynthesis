@@ -37,7 +37,7 @@ import fr.familiar.attributedfm.domain.Range;
 import fr.familiar.attributedfm.domain.RangeIntegerDomain;
 import fr.familiar.attributedfm.domain.SetIntegerDomain;
 
-public class AttributedWriter implements IWriter {
+public class AttributedWriter {
 
 	private BufferedWriter writer = null;
 	private AttributedFeatureModel fm = null;

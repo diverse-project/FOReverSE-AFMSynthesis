@@ -53,12 +53,15 @@ import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 import scala.util.Random
 import foreverse.afmsynthesis.afm.OrGroup
 import java.util.HashSet
+import foreverse.afmsynthesis.test.SynthesisMonitor
 
-class AFMSynthesizer extends PerformanceMonitor {
+class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
   
 	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true) : AttributedFeatureModel = {
-	  reset() // Reset performance monitor
+	  resetTops() // Reset performance monitor
+	  resetMetrics() // Reset synthesis monitor
+	  
 	  top("Synthesis")
 	  
 	  // Extract the features, the attributes and their domains
@@ -72,16 +75,21 @@ class AFMSynthesizer extends PerformanceMonitor {
 	    (attribute.name -> attribute.domain)
 	  }).toMap
 	  top()
+	  setMetric("#features", features.size.toString)
+	  setMetric("#attributes", attributes.size.toString)
 	  
 	  // Compute binary implications
 	  top("Binary implications")
 	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
 	  top()
+	  setMetric("#binary constraints", constraints.size.toString)
 	  
 	  // Define the hierarchy
 	  top("Implication and Mutex graph")
 	  val (big, mutexGraph) = computeBinaryImplicationAndMutexGraph(features, constraints)
 	  top()
+	  setMetric("#edges in BIG", big.edges().size.toString)
+	  setMetric("#edges in Mutex graph", mutexGraph.edgeSet().size.toString)
 	  
 	  top("Hierarchy")
 	  val hierarchy = extractHierarchy(big, knowledge)
@@ -95,6 +103,7 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  top("Mandatory features")
 	  val mandatoryRelations = computeMandatoryFeatures(big, hierarchy)
 	  top()
+	  setMetric("#mandatory relations", mandatoryRelations.size.toString)
 	  
 	  top("Feature groups")
 
@@ -131,6 +140,14 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  xorGroups = selectedGroups._3
 	  top()
 	  
+	  log("Feature groups")
+	  setMetric("#mutex groups", mutexGroups.size.toString)
+	  mutexGroups.foreach(log(_))
+	  setMetric("#or groups", orGroups.size.toString)
+	  orGroups.foreach(log(_))
+	  setMetric("#xor groups", xorGroups.size.toString)
+	  xorGroups.foreach(log(_))
+	  
 	  top() // End feature group computation
 	  
 	  // Compute constraints
@@ -138,17 +155,21 @@ class AFMSynthesizer extends PerformanceMonitor {
 	  top("Binary implies")
 	  val implies = computeCrossTreeImplications(hierarchy, big, mandatoryRelations)
 	  top()
+	  setMetric("#implies", implies.size.toString)
 	  
 	  top("Binary excludes")
 	  val excludes = computeCrossTreeExcludes(mutexGraph, mutexGroups, xorGroups)
 	  top()
-	  
+	  setMetric("#excludes", excludes.size.toString)
 	  
 	  top("Complex constraints")
 	  val complexConstraints = computeComplexCrossTreeConstraints(constraints)
 	  top()
+	  setMetric("#complex constraints", complexConstraints.size.toString)
+	  
 	  val rc = implies ::: excludes ::: complexConstraints
 	  top()
+	  setMetric("#cross tree constraints", rc.size.toString)
 	  
 	  // Create the attributed feature model
 	  top("AFM construction")
