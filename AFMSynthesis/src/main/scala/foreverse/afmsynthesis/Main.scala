@@ -22,6 +22,8 @@ import java.io.FileWriter
  */
 object Main extends App {
   
+  println("Starting experiment...")
+  
   // Parse parameters
   val dir = new File(args(0))
   val nbVariables = args(1).toInt
@@ -31,10 +33,12 @@ object Main extends App {
 
   // Create output directory for the results
   val random = new Random
-  val matrixName = "Random_" + nbVariables + "_" + nbConfigurations + "_" + maximumDomainSize + "_" + random.nextInt
+  val matrixName = "Random_" + nbVariables + "_" + nbConfigurations + "_" + maximumDomainSize + "_" + enableOrGroups + "_" + random.nextInt
   val outputDirPath = dir.getAbsolutePath() + "/" + matrixName + "/"
   val outputDir = new File(outputDirPath)
-  outputDir.mkdir()
+  
+  println("Writing results in " + outputDirPath)
+  outputDir.mkdirs()
   val logWriter = new FileWriter(outputDirPath + "log.txt")
   
   // Generate random input matrix
@@ -47,22 +51,31 @@ object Main extends App {
   synthesizer.perfLogger = x => logWriter.write(x.toString + "\n")
   synthesizer.synthesisLogger = x => logWriter.write(x.toString + "\n")
   val knowledge = new SimpleDomainKnowledge
-  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups)
-  
+  try {
+	  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, outputDirPath)
+	  
+	  // Write results
+	  val afmWriter = new ModelBasedFAMAWriter	
+	  afmWriter.write(afm, new File(outputDirPath + "synthesized_afm.afm"))
+	  
+	  val resultWriter = new CSVWriter(new FileWriter(outputDirPath + "metrics.csv"))
+	  val metrics = synthesizer.metrics
+	  val times = synthesizer.getTimes
+	  
+	  val labels = metrics.map(_._1).toList ::: times.map(_._1)
+	  resultWriter.writeRow(labels)
+	  val results = metrics.map(_._2).toList ::: times.map(_._3)
+	  resultWriter.writeRow(results)
 
-  // Write results
-  logWriter.close()
-  val afmWriter = new ModelBasedFAMAWriter	
-  afmWriter.write(afm, new File(outputDirPath + "synthesized_afm.afm"))
+	  logWriter.write("success")
+	  println("success")
+  } catch {
+    case e : Throwable => 
+      logWriter.write(e.toString())
+      logWriter.write("failed")
+      println("failed") 
+  } finally {
+	 logWriter.close()
+  }
   
-  val resultWriter = new CSVWriter(new FileWriter(outputDirPath + "metrics.csv"))
-  val metrics = synthesizer.metrics
-  val times = synthesizer.getTimes
-  
-  val labels = metrics.map(_._1).toList ::: times.map(_._1)
-  resultWriter.writeRow(labels)
-  val results = metrics.map(_._2).toList ::: times.map(_._3)
-  resultWriter.writeRow(results)
-  
-  println("Success! Results in " + outputDirPath)
 }

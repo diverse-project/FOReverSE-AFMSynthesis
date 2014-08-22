@@ -35,7 +35,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		val matrix = parser.parse(inputFile.getAbsolutePath, dummyRoot, rootName(inputFile.getName()))
 		val knowledge = new SimpleDomainKnowledge
 
-		val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups)
+		val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, "output/synthesized/")
 		val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))
 		writer.write(afm, outputFile)
 		

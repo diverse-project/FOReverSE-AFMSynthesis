@@ -58,7 +58,7 @@ import foreverse.afmsynthesis.test.SynthesisMonitor
 class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true, outputDirPath : String) : AttributedFeatureModel = {
 	  resetTops() // Reset performance monitor
 	  resetMetrics() // Reset synthesis monitor
 	  
@@ -80,7 +80,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  // Compute binary implications
 	  top("Binary implications")
-	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge)
+	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge, outputDirPath)
 	  top()
 	  setMetric("#binary constraints", constraints.size.toString)
 	  
@@ -230,7 +230,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	/**
 	 * Compute binary implications between the values of the matrix's columns
 	 */
-	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : DomainKnowledge)
+	def computeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : DomainKnowledge, outputDirPath : String)
 	: List[Constraint] = {
 
 	  // Create dictionary of matrix values
@@ -265,9 +265,12 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  val convertedMatrix = new ConfigurationMatrix(matrix.labels, convertedConfigurations)
 	  
 	  // Write converted matrix to CSV
-	  val convertedMatrixFile = //File.createTempFile("afmsynthesis_", ".csv")
-	    new File("output/convertedMatrix.csv")
-	  val resultFile = new File("output/results.txt")
+	  val convertedMatrixFile = new File(outputDirPath + "converted_matrix.csv")
+	  //File.createTempFile("afmsynthesis_", ".csv")
+	    //new File("output/convertedMatrix.csv")
+	  val resultFile = new File(outputDirPath + "sicstus_output.txt") 
+	    //File.createTempFile("afmsynthesis_", ".txt")
+	  //new File("output/results.txt")
 	  val writer = new CSVWriter(new FileWriter(convertedMatrixFile))
 	  writer.writeRow(convertedMatrix.labels)
 	  convertedMatrix.configurations.foreach(writer.writeRow(_))
@@ -289,7 +292,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	      )
 	      
 //	  val ioHandler = ProcessLogger(stdout => {println(stdout)}, stderr => {println(stderr)})
-	  val ioHandler = ProcessLogger(stdout => {}, stderr => {})
+	  val ioHandler = ProcessLogger(stdout => {synthesisLogger(stdout)}, stderr => {synthesisLogger(stderr)})
 	  top("Sicstus")
 	  val commandResult = reasonerCommand ! ioHandler
 	  top()
