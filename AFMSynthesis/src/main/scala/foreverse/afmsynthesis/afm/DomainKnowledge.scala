@@ -15,4 +15,6 @@ trait DomainKnowledge {
   
   def isTrue(feature : Feature, value : String) : Boolean 
   
+  def getConstraintBound(attribute : Attribute) : String
+  
 }

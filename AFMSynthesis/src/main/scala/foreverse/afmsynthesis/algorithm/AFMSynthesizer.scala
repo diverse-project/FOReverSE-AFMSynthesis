@@ -54,6 +54,10 @@ import scala.util.Random
 import foreverse.afmsynthesis.afm.OrGroup
 import java.util.HashSet
 import foreverse.afmsynthesis.test.SynthesisMonitor
+import foreverse.afmsynthesis.afm.constraint.Equal
+import foreverse.afmsynthesis.afm.constraint.IncludedIn
+import foreverse.afmsynthesis.afm.constraint.Less
+import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 
 class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
@@ -163,7 +167,8 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  setMetric("#excludes", excludes.size.toString)
 	  
 	  top("Complex constraints")
-	  val complexConstraints = computeComplexCrossTreeConstraints(constraints)
+	  val complexConstraints = computeComplexCrossTreeConstraints(features, attributes, constraints, knowledge)
+	  complexConstraints.foreach(println) // FIXME 
 	  top()
 	  setMetric("#complex constraints", complexConstraints.size.toString)
 	  
@@ -733,21 +738,16 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	/**
 	 * Compute complex constraints that can be integrated in RC
 	 */
-	def computeComplexCrossTreeConstraints(constraints : List[Constraint])
+	def computeComplexCrossTreeConstraints(feature : List[Feature], attributes : List[Attribute], constraints : List[Constraint], knowledge : DomainKnowledge)
 	: List[Constraint] = {
+		val crossTreeConstraints = ListBuffer.empty[Constraint]
+		crossTreeConstraints ++= computeCTCFromConstraints(constraints)
+		crossTreeConstraints ++= computeCTCForEachAttribute(attributes, constraints, knowledge)
+		crossTreeConstraints.toList
+	}
+	
+	private def computeCTCFromConstraints(constraints : List[Constraint]) : List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
-//	  crossTreeConstraints ++= constraints
-	  
-	  def findMax(domain : Domain, values : Set[String]) : Option[String] =  {
-	    val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
-	    val sortedValues = values.toList.sortWith(domain.lessThan)
-	    val max = sortedValues.last
-	    if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
-	      Some(max)
-	    } else {
-	      None
-	    }
-	  }
 	  
 	  for (constraint <- constraints) {
 	    val ctc = constraint match {
@@ -769,4 +769,53 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  }
 	  crossTreeConstraints.toList
 	}
+	
+	def findMax(domain : Domain, values : Set[String]) : Option[String] =  {
+		val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+		val sortedValues = values.toList.sortWith(domain.lessThan)
+		val max = sortedValues.last
+		if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
+			Some(max)
+		} else {
+			None
+		}
+	}
+	
+	private def computeCTCForEachAttribute(attributes : List[Attribute], constraints : List[Constraint], knowledge : DomainKnowledge) : List[Constraint] = {
+	  val crossTreeConstraints = ListBuffer.empty[Constraint]
+	  
+	  val constraintBounds = attributes.map(a => a -> knowledge.getConstraintBound(a)).toMap
+	  
+	  val lessMap = collection.mutable.Map.empty[(Attribute, Attribute), (Set[String], Set[String])]
+	  
+	  for (constraint <- constraints) {
+	    constraint match {
+	      case Implies(Equal(a1, v1), And(IncludedIn(a2, included), Not(IncludedIn(_, excluded)))) => {
+	        val bound = constraintBounds(a1)
+	        if (v1.toInt < bound.toInt) {
+		        val (prevIncluded, prevExcluded) = lessMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
+		        lessMap += ((a1, a2) -> (prevIncluded union included, prevExcluded intersect excluded))  
+	        }
+	      }
+	      
+	      case _ => 
+	    }
+	  }
+	  
+	  constraintBounds.foreach(println)
+	  lessMap.foreach(println)
+	  
+	  for (((a1, a2), (included, excluded)) <- lessMap) {
+	    val bound = constraintBounds(a1)
+	    val max = findMax(a2.domain, included) 
+	    if (max.isDefined) {
+	    	val constraint = Implies(Less(a1, bound), LessOrEqual(a2, max.get))
+	    	crossTreeConstraints += constraint
+	    }
+	    
+	  }
+	  
+	  crossTreeConstraints.toList
+	}
+	
 }

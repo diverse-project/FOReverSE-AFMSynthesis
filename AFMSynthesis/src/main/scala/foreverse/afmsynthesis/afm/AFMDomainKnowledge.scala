@@ -7,6 +7,7 @@ import scala.collection.mutable.ListBuffer
 import foreverse.ksynthesis.mst.OptimumBranchingFinder
 import foreverse.ksynthesis.mst.WeightedImplicationGraph
 import scala.collection.JavaConversions._
+import scala.util.Random
 
 class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowledge {
   
@@ -81,5 +82,12 @@ class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowled
   override def isTrue(feature : Feature, value : String) : Boolean = {
     // TODO : get the isTrue function from the AFM (which does not exist yet... :D ! )
     value == "1"
+  }
+  
+  override def getConstraintBound(attribute : Attribute) : String = {
+	// TODO : get bound from afm constraint
+    val values = attribute.domain.values.toList
+    val random = new Random
+    values(random.nextInt(values.size))
   }
 }

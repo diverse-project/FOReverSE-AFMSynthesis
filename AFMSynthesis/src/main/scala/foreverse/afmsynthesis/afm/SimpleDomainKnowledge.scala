@@ -82,4 +82,10 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     value == "1"
   }
   
+  override def getConstraintBound(attribute : Attribute) : String = {
+    val values = attribute.domain.values.toList
+    val random = new Random
+    values(random.nextInt(values.size))
+  }
+  
 }

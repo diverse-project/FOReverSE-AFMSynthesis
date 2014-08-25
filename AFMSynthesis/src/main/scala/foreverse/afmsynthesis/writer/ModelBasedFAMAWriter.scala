@@ -26,6 +26,7 @@ import fr.familiar.attributedfm.RequiresDependency
 import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.constraint.Not
+import foreverse.afmsynthesis.afm.constraint.Less
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 
@@ -136,6 +137,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           	  case f : Feature => f.name
           	  case Not(f : Feature) => "NOT " + f.name + ""
           	  case Equal(a, value) => attributeToFama(a) + " == " + value
+          	  case Less(a, value) => attributeToFama(a) + " < " + value
           	  case _ => throw new UnsupportedOperationException
           	}
           	val rightString = attributeToFama(attribute) + " <= " + max
