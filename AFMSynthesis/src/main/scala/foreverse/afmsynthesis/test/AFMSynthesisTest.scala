@@ -74,6 +74,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   it should "be complete" in {
     val parser = new FastCSVConfigurationMatrixParser
     val inputDir = new File(GENERATED_DIR)
+//    val inputDir = new File(INPUT_DIR)
     
     for (inputFile <- inputDir.listFiles() if inputFile.getName().endsWith(".csv")) {
       println(inputFile.getAbsolutePath())
