@@ -27,29 +27,37 @@ import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.constraint.Excludes
 import foreverse.afmsynthesis.afm.constraint.Not
 import foreverse.afmsynthesis.afm.constraint.Less
+import foreverse.afmsynthesis.afm.constraint.Constraint
+import foreverse.afmsynthesis.afm.constraint.LessOrEqual
+import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
+import foreverse.afmsynthesis.afm.constraint.Greater
+import foreverse.afmsynthesis.afm.constraint.Greater
 
 class ModelBasedFAMAWriter extends FAMAWriter {
 
+  var afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature] = _
+  var afd : AttributedFeatureDiagram = _
+  
   override def write(afm : AttributedFeatureModel, file : File) {
 	  val famaAFM = new fr.familiar.attributedfm.AttributedFeatureModel
 
 	  // Create FAMA features
-	  val afd = afm.diagram
-	  val afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(f.name))).toMap
+	  afd = afm.diagram
+	  afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(f.name))).toMap
 //	  for ((feature, famaFeature) <- afmToFAMA) {
 //	    famaFeature.setName(feature.name)
 //	  }
 	  
-	  writeHierarchy(afd, famaAFM, afmToFAMA)
-	  writeAttributes(afd, famaAFM, afmToFAMA)
-	  writeConstraints(afd, famaAFM, afmToFAMA)
+	  writeHierarchy(famaAFM, afmToFAMA)
+	  writeAttributes(famaAFM, afmToFAMA)
+	  writeConstraints(famaAFM)
 	  
 	  val writer = new AttributedWriter
 	  file.delete()
 	  writer.writeFile(file.getAbsolutePath(), famaAFM)
   }
   
-  private def writeHierarchy(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
+  private def writeHierarchy(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     
     val hierarchy = afd.hierarchy
     val relations = afd.mandatoryRelations ::: 
@@ -100,7 +108,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
      
   }
   
-  private def writeAttributes(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
+  private def writeAttributes(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     for ((feature, famaFeature) <- afmToFAMA) {
     	for (attribute <- feature.attributes) {
     	  val name = attribute.name
@@ -119,39 +127,45 @@ class ModelBasedFAMAWriter extends FAMAWriter {
     }
   }
   
-  private def writeConstraints(afd : AttributedFeatureDiagram, famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
+  private def writeConstraints(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel) {
 
-    def attributeToFama(attribute : Attribute) : String = {
-      val feature = afd.features.find(_.attributes.contains(attribute))
-      feature.get.name + "." + attribute.name
-    }
-    
     for (constraint <- afd.constraints) {
-      val famaConstraint = constraint match {
-        case Implies(feature : Feature, implied : Feature) => 
-          Some(new RequiresDependency(afmToFAMA(feature), afmToFAMA(implied)))
-        case Excludes(feature : Feature, excluded : Feature) =>
-          Some(new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded)))
-        case Implies(left, LessOrEqual(attribute, max)) => 
-          	val leftString = left match {
-          	  case f : Feature => f.name
-          	  case Not(f : Feature) => "NOT " + f.name + ""
-          	  case Equal(a, value) => attributeToFama(a) + " == " + value
-          	  case Less(a, value) => attributeToFama(a) + " < " + value
-          	  case _ => throw new UnsupportedOperationException
-          	}
-          	val rightString = attributeToFama(attribute) + " <= " + max
-          	val constraintString = leftString +  " IMPLIES " + rightString
-//          	println(constraintString)
-          	Some(new ComplexConstraint(constraintString))
-        case _ => None
-      }
-      
-      if (famaConstraint.isDefined) {
-    	  famaAFM.addConstraint(famaConstraint.get)
-      }
+      val famaConstraint = constraintToFAMA(constraint)
+      famaAFM.addConstraint(famaConstraint)
     }
   }
   
+  private def attributeToFama(attribute : Attribute) : String = {
+      val feature = afd.features.find(_.attributes.contains(attribute))
+      feature.get.name + "." + attribute.name
+  }
+  
+  private def constraintToFAMA(constraint : Constraint) : fr.familiar.attributedfm.Constraint = {
+    
+    constraint match {
+        case Implies(feature : Feature, implied : Feature) => 
+          new RequiresDependency(afmToFAMA(feature), afmToFAMA(implied))
+        case Excludes(feature : Feature, excluded : Feature) =>
+          new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded))
+        case Implies(left, right) => 
+          val constraintString = complexConstraintToFAMA(left) + " IMPLIES " + complexConstraintToFAMA(right)
+          new ComplexConstraint(constraintString)
+//        case _ => throw new UnsupportedOperationException
+      }
+    
+  }
+  
+  private def complexConstraintToFAMA(constraint : Constraint) : String = {
+    constraint match {
+      case f : Feature => f.name
+      case Not(f : Feature) => "NOT " + f.name + ""
+      case Equal(a, value) => attributeToFama(a) + " == " + value
+      case Less(a, value) => attributeToFama(a) + " < " + value
+      case LessOrEqual(a, value) => attributeToFama(a) + " <= " + value
+      case Greater(a, value) => attributeToFama(a) + " > " + value
+      case GreaterOrEqual(a, value) => attributeToFama(a) + " >= " + value
+//      case _ => throw new UnsupportedOperationException
+    }
+  }
   
 }

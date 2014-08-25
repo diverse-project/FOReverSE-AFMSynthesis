@@ -58,6 +58,8 @@ import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.constraint.IncludedIn
 import foreverse.afmsynthesis.afm.constraint.Less
 import foreverse.afmsynthesis.afm.constraint.LessOrEqual
+import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
+import foreverse.afmsynthesis.afm.constraint.Greater
 
 class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
@@ -168,7 +170,6 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  top("Complex constraints")
 	  val complexConstraints = computeComplexCrossTreeConstraints(features, attributes, constraints, knowledge)
-	  complexConstraints.foreach(println) // FIXME 
 	  top()
 	  setMetric("#complex constraints", complexConstraints.size.toString)
 	  
@@ -742,17 +743,21 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: List[Constraint] = {
 		val crossTreeConstraints = ListBuffer.empty[Constraint]
 		crossTreeConstraints ++= computeCTCFromConstraints(constraints)
-		crossTreeConstraints ++= computeCTCForEachAttribute(attributes, constraints, knowledge)
+		crossTreeConstraints ++= computeCTCByAggregation(attributes, constraints, knowledge)
 		crossTreeConstraints.toList
 	}
 	
+	/**
+	 * Compute complex CTC directly from simple constraints
+	 * If the right part of a generated constraint can be represented with LessOrEqual, its equivalent is created
+	 */
 	private def computeCTCFromConstraints(constraints : List[Constraint]) : List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
 	  
 	  for (constraint <- constraints) {
 	    val ctc = constraint match {
 	      case Implies(left, And(IncludedIn(attribute, values), _)) => 
-	        val max = findMax(attribute.domain, values)
+	        val max = findUpperBound(attribute.domain, values)
 	        if (max.isDefined) {
 	          Some(Implies(left, LessOrEqual(attribute, max.get)))
 	        } else {
@@ -770,52 +775,139 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  crossTreeConstraints.toList
 	}
 	
-	def findMax(domain : Domain, values : Set[String]) : Option[String] =  {
-		val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
-		val sortedValues = values.toList.sortWith(domain.lessThan)
-		val max = sortedValues.last
-		if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
-			Some(max)
+	/**
+	 * Check that the set of values is the lower part of the domain
+	 * If it is true, it returns its upper bound
+	 */
+	def findUpperBound(domain : Domain, values : Set[String]) : Option[String] =  {
+		if (!values.isEmpty) {
+			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+			val sortedValues = values.toList.sortWith(domain.lessThan)
+			val max = sortedValues.last
+			if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
+				Some(max)
+			} else {
+				None
+			}
 		} else {
-			None
+		  None
+		}
+		
+	}
+	
+	/**
+	 * Check that the set of values is the upper part of the domain
+	 * If it is true, it returns its lower bound
+	 */
+	def findLowerBound(domain : Domain, values : Set[String]) : Option[String] =  {
+	  if (!values.isEmpty) {
+			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+			val sortedValues = values.toList.sortWith(domain.lessThan)
+			val min = sortedValues.head
+			if (sortedDomainValues.endsWith(sortedValues) && min != sortedDomainValues.head) {
+				Some(min)
+			} else {
+				None
+			}
+		} else {
+		  None
 		}
 	}
 	
-	private def computeCTCForEachAttribute(attributes : List[Attribute], constraints : List[Constraint], knowledge : DomainKnowledge) : List[Constraint] = {
+	/**
+	 * Aggregate constraints according to a bound defined by the domain knowledge
+	 */
+	private def computeCTCByAggregation(
+	    attributes : List[Attribute], 
+	    constraints : List[Constraint], 
+	    knowledge : DomainKnowledge) 
+	: List[Constraint] = {
 	  val crossTreeConstraints = ListBuffer.empty[Constraint]
 	  
+	  // Aggregate generated constraints
 	  val constraintBounds = attributes.map(a => a -> knowledge.getConstraintBound(a)).toMap
 	  
+	  val attributePairs = collection.mutable.Set.empty[(Attribute, Attribute)]
 	  val lessMap = collection.mutable.Map.empty[(Attribute, Attribute), (Set[String], Set[String])]
+	  val greaterMap = collection.mutable.Map.empty[(Attribute, Attribute), (Set[String], Set[String])]
+	  val equalMap = collection.mutable.Map.empty[(Attribute, Attribute), (Set[String], Set[String])]
 	  
 	  for (constraint <- constraints) {
 	    constraint match {
 	      case Implies(Equal(a1, v1), And(IncludedIn(a2, included), Not(IncludedIn(_, excluded)))) => {
+	        val attributePair = (a1, a2) 
+	        attributePairs += attributePair
+	        
 	        val bound = constraintBounds(a1)
-	        if (v1.toInt < bound.toInt) {
-		        val (prevIncluded, prevExcluded) = lessMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
-		        lessMap += ((a1, a2) -> (prevIncluded union included, prevExcluded intersect excluded))  
+	        
+	        val relatedMap = if (v1.toInt < bound.toInt) {
+		      lessMap
+	        } else if (v1.toInt > bound.toInt) {
+	          greaterMap
+	        } else {
+	          equalMap
 	        }
+	        
+	        val (prevIncluded, prevExcluded) = relatedMap.getOrElse(attributePair, (Set.empty[String], a2.domain.values))
+		    relatedMap += (attributePair -> (prevIncluded union included, prevExcluded intersect excluded))  
+		    
 	      }
 	      
 	      case _ => 
 	    }
 	  }
 	  
-	  constraintBounds.foreach(println)
-	  lessMap.foreach(println)
-	  
-	  for (((a1, a2), (included, excluded)) <- lessMap) {
+	  // Create complex constraints if possible
+	  for ((a1, a2) <- attributePairs) {
 	    val bound = constraintBounds(a1)
-	    val max = findMax(a2.domain, included) 
-	    if (max.isDefined) {
-	    	val constraint = Implies(Less(a1, bound), LessOrEqual(a2, max.get))
-	    	crossTreeConstraints += constraint
+	    val (lessIncluded, lessExcluded) = lessMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
+	    val (greaterIncluded, greaterExcluded) = greaterMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
+	    val (equalIncluded, equalExcluded) = equalMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
+	    
+	    val a1Values = a1.domain.values.toList
+	    val sortedA1Values = a1Values.sortWith(a1.domain.lessThan)
+	    
+	    addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded, lessExcluded, Less(a1, bound))
+	    addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded, greaterExcluded, Greater(a1, bound))
+	    if (sortedA1Values.head != bound) {
+	    	addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded union equalIncluded, lessExcluded intersect equalExcluded, LessOrEqual(a1, bound))
 	    }
+	    if (sortedA1Values.last != bound) {
+	    	addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded union equalIncluded, greaterExcluded intersect equalExcluded, GreaterOrEqual(a1, bound))  
+	    }
+	    
 	    
 	  }
 	  
 	  crossTreeConstraints.toList
+	}
+	
+	/**
+	 * Add a complex CTC if "included" can be represented as a LessOrEqual or GreaterOrEqual relation
+	 */
+	def addComplexCrossTreeConstraint(
+	    crossTreeConstraints : ListBuffer[Constraint], 
+	    a1 : Attribute, 
+	    a2 : Attribute, 
+	    included : Set[String], 
+	    excluded : Set[String], 
+	    leftConstraint : Constraint) {
+	  
+	    val upperBound = findUpperBound(a2.domain, included)
+	    val lowerBound = findLowerBound(a2.domain, included)
+	    
+	    val constraint = if (upperBound.isDefined) {
+	    	Some(Implies(leftConstraint, LessOrEqual(a2, upperBound.get)))
+	    } else if (lowerBound.isDefined) {
+	    	Some(Implies(leftConstraint, GreaterOrEqual(a2, lowerBound.get)))
+	    } else {
+	    	None
+	    }
+	    
+	    if (constraint.isDefined) {
+	      crossTreeConstraints += constraint.get
+	    }
+		
 	}
 	
 }

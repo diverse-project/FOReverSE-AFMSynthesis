@@ -73,7 +73,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   it should "be complete" in {
     val parser = new FastCSVConfigurationMatrixParser
-    val inputDir = new File(INPUT_DIR)
+    val inputDir = new File(GENERATED_DIR)
     
     for (inputFile <- inputDir.listFiles() if inputFile.getName().endsWith(".csv")) {
       println(inputFile.getAbsolutePath())
@@ -117,7 +117,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
   
   "Random matrix generator" should "generate random matrices" in {
-    val nbMatrices = 1
+    val nbMatrices = 10
     val nbVariables = 10
     val nbConfigurations = 100
     val maximumDomainSize = 5
