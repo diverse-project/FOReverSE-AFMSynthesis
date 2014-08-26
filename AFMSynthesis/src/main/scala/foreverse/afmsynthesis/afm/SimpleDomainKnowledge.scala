@@ -11,6 +11,9 @@ import foreverse.ksynthesis.metrics.RandomMetric
 import scala.util.Random
 
 class SimpleDomainKnowledge extends DomainKnowledge {
+  
+  
+  val random = new Random
 
   override def extractFeaturesAndAttributes(matrix : ConfigurationMatrix, columnDomains : Map[String, Set[String]]) 
   : (List[Feature], List[Attribute]) = {
@@ -42,10 +45,7 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		}
 	  }
 
-	  // FIXME : implicit features !
-	  
 	  (features.toList, attributes.toList)
-
   }
   
   override def selectHierarchy(big : ImplicationGraph[Feature]) : ImplicationGraph[Feature] = {
@@ -60,7 +60,6 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     wbig.removeAllEdges(edgesToRemove)
     
     // Set random weights
-    val random = new Random
     for (edge <- wbig.edges()) {
       wbig.setEdgeWeight(edge, random.nextDouble)
     }
@@ -71,11 +70,11 @@ class SimpleDomainKnowledge extends DomainKnowledge {
   
   override def placeAttribute(attribute : Attribute, legalPositions : Set[Feature]) : Feature = {
     require(!legalPositions.isEmpty, "An attribute must have at least one possible place in the hierarchy")
-    legalPositions.head
+    legalPositions.toList(random.nextInt(legalPositions.size))
   }
   
   override def selectOneGroup(overlappingGroups : Set[Relation]) : Relation = {
-    overlappingGroups.head
+    overlappingGroups.toList(random.nextInt(overlappingGroups.size))
   }
   
   override def isTrue(feature : Feature, value : String) : Boolean = {
@@ -84,7 +83,6 @@ class SimpleDomainKnowledge extends DomainKnowledge {
   
   override def getConstraintBound(attribute : Attribute) : String = {
     val values = attribute.domain.values.toList
-    val random = new Random
     values(random.nextInt(values.size))
   }
   
