@@ -30,6 +30,11 @@ object RandomSynthesis extends App {
   val nbConfigurations = args(2).toInt
   val maximumDomainSize = args(3).toInt
   val enableOrGroups = args(4).toBoolean
+  val timeoutOrGroups = if (enableOrGroups) {
+    Some(args(5).toInt)
+  } else {
+    None
+  }
 
   // Create output directory for the results
   val random = new Random
@@ -52,7 +57,7 @@ object RandomSynthesis extends App {
   synthesizer.synthesisLogger = x => logWriter.write(x.toString + "\n")
   val knowledge = new SimpleDomainKnowledge
   try {
-	  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, outputDirPath)
+	  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, timeoutOrGroups, outputDirPath)
 	  
 	  // Write results
 	  val afmWriter = new ModelBasedFAMAWriter	

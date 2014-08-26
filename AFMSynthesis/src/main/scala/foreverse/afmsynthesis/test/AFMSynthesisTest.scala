@@ -35,7 +35,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		val matrix = parser.parse(inputFile.getAbsolutePath, dummyRoot, rootName(inputFile.getName()))
 		val knowledge = new SimpleDomainKnowledge
 
-		val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, "output/synthesized/")
+		val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, Some(3), "output/synthesized/")
 		val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))
 		writer.write(afm, outputFile)
 		
@@ -118,9 +118,9 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
   
   "Random matrix generator" should "generate random matrices" in {
-    val nbMatrices = 10
-    val nbVariables = 10
-    val nbConfigurations = 100
+    val nbMatrices = 1
+    val nbVariables = 1000
+    val nbConfigurations = 10
     val maximumDomainSize = 5
     
     val random = new Random

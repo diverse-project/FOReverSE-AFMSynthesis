@@ -21,13 +21,8 @@ object ProductGenerator extends App {
 
   println("Generating products...")
   try {
-    val generation : Future[Unit] = future {
-	  generator.generateProducts(input, output)
-    }
-    
-    Await.result(generation, timeout.minutes)
-    
-    println("...done")
+	val nbConfigurations = generator.generateProducts(input, output, timeout)
+    println("...done : " + nbConfigurations + " configurations generated")
   } catch {
     case e : ContradictionException => println("...failed ! Input AFM is contradictory")
     case e : TimeoutException => println("...timeout")

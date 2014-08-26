@@ -60,11 +60,17 @@ import foreverse.afmsynthesis.afm.constraint.Less
 import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
 import foreverse.afmsynthesis.afm.constraint.Greater
+import scala.concurrent.future
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration.DurationInt
 
 class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
   
-	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean = true, outputDirPath : String) : AttributedFeatureModel = {
+	def synthesize(matrix : ConfigurationMatrix, knowledge : DomainKnowledge, enableOrGroups : Boolean, orGroupTimeout : Option[Int], outputDirPath : String) : AttributedFeatureModel = {
 	  resetTops() // Reset performance monitor
 	  resetMetrics() // Reset synthesis monitor
 	  
@@ -117,27 +123,33 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  var mutexGroups = computeMutexGroups(mutexGraph, hierarchy, features)
 	  top()
 	  
-	  var (orGroups, xorGroups) = if (enableOrGroups) {
-	    top("Or")
-	    val orG = computeOrGroups(matrix, hierarchy, features, knowledge)
-	    top()
-	    
-	    top("Xor")
-	    val xorG = computeXOrGroups(mutexGroups, orG)
-	    top()
-	    
-	    (orG, xorG)
-	    
+	  
+	  top("Or")
+	  var computedOrGroups = if (enableOrGroups && orGroupTimeout.isDefined) {
+	    try {
+			val orGroupComputation : Future[List[OrGroup]] = future {
+			  computeOrGroups(matrix, hierarchy, features, knowledge)
+		  	}
+			
+			Some(Await.result(orGroupComputation, orGroupTimeout.get.minutes))
+		} catch {
+		  case e : TimeoutException =>
+		    synthesisLogger("timeout for Or groups")
+		    None
+		}
 	  } else {
-	    top("Or")
-	    // No computation of OR groups
-	    top()
-	    
-	    top("Xor")
-	    val xorG = computeXOrGroupsAlternative(mutexGroups, matrix, knowledge)
-	    top()
-	    (Nil, xorG)
+	    None
 	  }
+	  var orGroups = computedOrGroups.getOrElse(Nil)
+	  top()
+	  
+	  top("Xor")
+	  var xorGroups = if (computedOrGroups.isDefined) {
+	    computeXOrGroups(mutexGroups, computedOrGroups.get)
+	  } else {
+	    computeXOrGroupsAlternative(mutexGroups, matrix, knowledge)
+	  }
+	  top()
 	  
 	  top("Group processing")
 	  val selectedGroups = processOverlappingGroups(features, mutexGroups, orGroups, xorGroups, knowledge) 
