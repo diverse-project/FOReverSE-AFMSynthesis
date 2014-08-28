@@ -47,11 +47,13 @@ object RandomSynthesis extends App {
   val logWriter = new FileWriter(outputDirPath + "log.txt")
   
   // Generate random input matrix
+  println("Generating matrix")
   val matrix = RandomMatrixGenerator.generateMatrix(nbVariables, nbConfigurations, maximumDomainSize)
   val matrixWriter = new CSVConfigurationMatrixWriter
   matrixWriter.writeToCSV(matrix, new File(outputDirPath + "input_matrix.csv"))
   
   // Synthesize AFM
+  println("Synthesizing the AFM")
   val synthesizer = new AFMSynthesizer
   synthesizer.perfLogger = x => logWriter.write(x.toString + "\n")
   synthesizer.synthesisLogger = x => logWriter.write(x.toString + "\n")
@@ -60,6 +62,7 @@ object RandomSynthesis extends App {
 	  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, timeoutOrGroups, outputDirPath)
 	  
 	  // Write results
+	  println("Writing results")
 	  val afmWriter = new ModelBasedFAMAWriter	
 	  afmWriter.write(afm, new File(outputDirPath + "synthesized_afm.afm"))
 	  
@@ -76,6 +79,7 @@ object RandomSynthesis extends App {
 	  println("success")
   } catch {
     case e : Throwable => 
+      println(e)
       logWriter.write(e.toString())
       logWriter.write("failed")
       println("failed") 

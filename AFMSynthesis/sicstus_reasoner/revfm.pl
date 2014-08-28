@@ -330,3 +330,29 @@ bench(N, SIZE, D, CTR) :-
         write('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'),nl.
 
 
+% benchs will repeat 10 times the experiment to avoid the factor of bad luck
+benchs(N, SIZE, D) :-
+        P = 10,
+        benchs(0, P, 0, T, 0, M, N, SIZE, D),
+        T1 is T / P,
+        M1 is M // P,
+        write('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'),nl,
+        write('STATISTICS over '),write(P), write(' trials'),nl,
+        write('Average runtime: '), write(T1),write(' miliseconds'),nl,
+        write('Average nbre of generated ctrs: '), write(M1),nl,nl,
+        write('P times'),nl,
+        fd_statistics,
+        write('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'),nl.
+
+benchs(P, P, T, T, M, M, N, SIZE, D) :-!.
+benchs(P1, P, T1, T, M1, M, N, SIZE, D):-
+       gen_random(N, SIZE, D, TABLE),
+       lists:length(LV, SIZE),
+       statistics(runtime,[_,_TT0]),
+       revfm(LV, TABLE, CTR),
+       statistics(runtime,[_,_TT1]),
+       lists:length(CTR, M0),
+       M2 is M1 + M0,
+       T2 is _TT1 - _TT0 + T1,
+       P2 is P1 + 1,
+       benchs(P2, P, T2, T, M2, M, N, SIZE, D).
