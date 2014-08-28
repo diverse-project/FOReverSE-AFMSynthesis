@@ -909,9 +909,17 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	    val lowerBound = findLowerBound(a2.domain, included)
 	    
 	    val constraint = if (upperBound.isDefined) {
-	    	Some(Implies(leftConstraint, LessOrEqual(a2, upperBound.get)))
+	      if (included.size == 1) {
+	        Some(Implies(leftConstraint, Equal(a2, upperBound.get)))
+	      } else {
+	        Some(Implies(leftConstraint, LessOrEqual(a2, upperBound.get)))
+	      }
 	    } else if (lowerBound.isDefined) {
-	    	Some(Implies(leftConstraint, GreaterOrEqual(a2, lowerBound.get)))
+	      if (included.size == 1) {
+	        Some(Implies(leftConstraint, Equal(a2, lowerBound.get)))
+	      } else {
+	        Some(Implies(leftConstraint, GreaterOrEqual(a2, lowerBound.get)))
+	      }
 	    } else {
 	    	None
 	    }
