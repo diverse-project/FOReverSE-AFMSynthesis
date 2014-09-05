@@ -44,7 +44,6 @@ object RandomSynthesis extends App {
   
   println("Writing results in " + outputDirPath)
   outputDir.mkdirs()
-  val logWriter = new FileWriter(outputDirPath + "log.txt")
   
   // Generate random input matrix
   println("Generating matrix")
@@ -55,12 +54,27 @@ object RandomSynthesis extends App {
   // Synthesize AFM
   println("Synthesizing the AFM")
   val synthesizer = new AFMSynthesizer
+  
+  val logWriter = new FileWriter(outputDirPath + "log.txt")
   synthesizer.perfLogger = x => logWriter.write(x.toString + "\n")
   synthesizer.synthesisLogger = x => logWriter.write(x.toString + "\n")
+  
   val knowledge = new SimpleDomainKnowledge
   try {
 	  val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, timeoutOrGroups, outputDirPath)
 	  
+	  synthesizer.setMetric("#variables", nbVariables.toString)
+	  
+	  synthesizer.setMetric("#configurations", nbConfigurations.toString)
+	  val nbDistinctConfigurations = matrix.configurations.size
+	  synthesizer.setMetric("#distinct configurations", nbDistinctConfigurations.toString)
+	  
+  	  synthesizer.setMetric("max domain size", maximumDomainSize.toString)
+  	  val realMaximumDomainSize = matrix.labels.zipWithIndex.map(li => matrix.configurations.map(c => c(li._2)).distinct.size).max
+  	  synthesizer.setMetric("real max domain size", realMaximumDomainSize.toString)
+  	  
+  	  synthesizer.setMetric("enable or groups", enableOrGroups.toString)
+  
 	  // Write results
 	  println("Writing results")
 	  val afmWriter = new ModelBasedFAMAWriter	

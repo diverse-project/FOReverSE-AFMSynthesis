@@ -63,7 +63,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   
   it should "synthesize AFM from randomly generated AFMs" in {
     val dir = new File(GENERATED_DIR)
-    synthesizeAFMFromDir(dir, true, false)
+    synthesizeAFMFromDir(dir, false, false)
   }
   
   it should "synthesize a specific directory" in {

@@ -20,17 +20,18 @@ object RandomMatrixGenerator {
     val isBoolean = varNames.map(name => (name -> random.nextBoolean)).toMap
     
     val configurations = for (i <- 0 until nbConfigurations) yield {
-    	Array("1") ++ (
-    	for (varName <- varNames) yield {
+    	val root = "1" 
+    	val config = for (varName <- varNames.toList) yield {
     	  if (isBoolean(varName)) {
     		  random.nextInt(2).toString
     	  } else {
     		  random.nextInt(maximumDomainSize).toString
     	  }
-    	})
+    	}
+    	root :: config
     }
     
     val labels = Array("root") ++ varNames
-    new ConfigurationMatrix(labels, configurations.toList)
+    new ConfigurationMatrix(labels, configurations.distinct.map(_.toArray).toList)
   }
 }

@@ -517,7 +517,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: List[OrGroup] = {
 	  
 	  // Convert matrix to DNF
-	  top("Conversion to DNF")
+//	  top("Conversion to DNF")
 	  
 	  val variables = features.map(feature => {
 	    val index = matrix.labels.indexOf(feature.name)
@@ -544,10 +544,10 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  val dnf = new DNF(clauses)
 	  
-	  top()
+//	  top()
 	  
 	  // Compute Or groups
-	  top("Compute")
+//	  top("Compute")
 	  val orGroups = ListBuffer.empty[OrGroup]
 	  for ((parent, index, variable) <- variables) {
 	    val children = hierarchy.children(parent)
@@ -571,7 +571,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	      
 	    }
 	  }
-	  top()
+//	  top()
 	  
 	  orGroups.toList
 	}

@@ -26,7 +26,7 @@ class FAMAGenerator extends FlatSpec with Matchers {
 	val GENERATED_AFM_DIR = "../AFMGenerator/generated_AFMs/"
 	val SYNTHESIZED_AFM_DIR = "../AFMSynthesis/output/synthesized/"
   
- def generateProducts(inputFile: File, outputFile: File, timeout : Int) : Int = {
+ def generateProducts(inputFile: File, outputFile: File, max : Int) : (Int, Boolean) = {
    
    val csvWriter = CSVWriter.open(outputFile)
    var nbSolutions = 0
@@ -53,7 +53,7 @@ class FAMAGenerator extends FlatSpec with Matchers {
 	   var sortedFeatures = features.toList.sorted
 	   var firstProduct = true
 	    
-	   val generation : Future[Unit] = future {
+//	   val generation : Future[Unit] = future {
 		   if (solver.solve() && solver.isFeasible) {
 		     do {
 		       // Convert solution to product
@@ -83,17 +83,17 @@ class FAMAGenerator extends FlatSpec with Matchers {
 		       csvWriter.writeRow(productRow)
 		       nbSolutions += 1
 		       
-		     } while (solver.nextSolution());
+		     } while (nbSolutions < max && solver.nextSolution());
 		   }
-	   }
+//	   }
 	   
-	   Await.result(generation, timeout.minutes)
+//	   Await.result(generation, timeout.minutes)
 	   
    } finally {
 	   csvWriter.close  
    }
    
-   nbSolutions
+   (nbSolutions, nbSolutions == max)
  }
 	  
 	  
@@ -104,10 +104,7 @@ class FAMAGenerator extends FlatSpec with Matchers {
 		  val outputFile = new File(dir.getAbsolutePath() + "/" + outputName)
 		  println("Generating products for " + inputName)
 		  try {
-//		    val generation : Future[Unit] = future {
-			  generateProducts(inputFile, outputFile, 10)
-//	  		}
-//		  	Await.result(generation, 2.minutes)
+			  generateProducts(inputFile, outputFile, 1)
 		  } catch {
 		    case e : ContradictionException => {
 		      println("contradiction")

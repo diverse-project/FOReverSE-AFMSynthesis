@@ -5,6 +5,8 @@ import java.io.File
 import java.io.FileWriter
 import com.github.tototoshi.csv.CSVReader
 import com.github.tototoshi.csv.CSVWriter
+import java.io.FileReader
+import java.io.BufferedReader
 
 object ConfigurationSemanticsChecker extends App {
 
@@ -13,9 +15,11 @@ object ConfigurationSemanticsChecker extends App {
   val inputMatrixPath = dir.getAbsolutePath() + "/input_matrix.csv" 
   val outputMatrixPath = dir.getAbsolutePath() + "/output_matrix.csv"
   val metricsPath = dir.getAbsolutePath() + "/metrics.csv"
+  val logPath = dir.getAbsolutePath() + "/log_products.csv"
   
   val inputMatrixFile = new File(inputMatrixPath)
   val outputMatrixFile = new File(outputMatrixPath)
+  val logFile = new File(logPath)
   
   if (!inputMatrixFile.exists()) {
 	println("Input matrix does not exist")
@@ -23,12 +27,17 @@ object ConfigurationSemanticsChecker extends App {
     println("Output matrix does not exist")
   } else {
     
+	  println("Parsing matrices")
 	  val parser = new FastCSVConfigurationMatrixParser
 	  val inputMatrix = parser.parse(inputMatrixPath, false, quiet=true)
 	  val outputMatrix = parser.parse(outputMatrixPath, false, quiet=true)
 	  
+	  val logReader = new BufferedReader(new FileReader(logFile))
+	  val status = logReader.readLine() 
+	  logReader.close()
 	  
 	  // Create a dictionary to translate column positions between input and output matrices
+	  println("Creating dictionary")
 	  val dictionary = collection.mutable.Map.empty[Int, Int]
 		for ((inLabel, inIndex) <- inputMatrix.labels.zipWithIndex) {
 			val outVar = outputMatrix.labels.zipWithIndex.find(_._1.endsWith(inLabel))
@@ -39,6 +48,7 @@ object ConfigurationSemanticsChecker extends App {
 		}
 
 	  // Check completeness of algorithm
+	  println("Checking completeness")
 	  for (inConfig <- inputMatrix.configurations) {
 		  val outConfig = outputMatrix.configurations.find{ outConfig =>
 		  	inConfig.zipWithIndex.forall(value =>
@@ -51,14 +61,14 @@ object ConfigurationSemanticsChecker extends App {
 	  }
 	  
 	  // Compute overapproximation of the algorithm
-	  val nbInputConfigurations = inputMatrix.configurations.size 
+	  val nbInputConfigurations = inputMatrix.configurations.distinct.size 
 	  val nbOutputConfigurations = outputMatrix.configurations.size 
 	  val overApproximation = ((nbOutputConfigurations - nbInputConfigurations) * 100).toDouble / nbOutputConfigurations.toDouble
 
 	  // Append results to metrics.csv file
 	  val csvReader = CSVReader.open(metricsPath)
-	  val headers = csvReader.readNext.get ::: List("#input configurations", "#output configurations", "%incorrect configurations")
-	  val values = csvReader.readNext.get ::: List(nbInputConfigurations, nbOutputConfigurations, overApproximation)
+	  val headers = csvReader.readNext.get ::: List("#output configurations", "%incorrect configurations", "product generation status")
+	  val values = csvReader.readNext.get ::: List(nbOutputConfigurations, overApproximation, status)
 	  csvReader.close
 	  
 	  
