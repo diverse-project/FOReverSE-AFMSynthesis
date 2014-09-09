@@ -433,83 +433,74 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: List[Constraint] = {
 	  val constraints = ListBuffer.empty[Constraint]
 	  
-	  // Init map that will contain the information for creating the constraints
-	  val mapForConstraints = collection.mutable.Map.empty[(String, String, String), collection.mutable.Set[String]]
-//	  for (var1 <- matrix.labels; var2 <- matrix.labels if var1 != var2) {
-//	    val domain = columnDomains(var1)
-//	    for (value <- domain) {
-//	      mapForConstraints += ((var1, value, var2) -> collection.mutable.Set.empty[String])
-//	    }
-//	  }
 	  
-	  // Compute constraints
-	  for (configuration <- matrix.configurations) {
-	    
-	    for (
+	  for (
 	        (var1, index1) <- matrix.labels.zipWithIndex;
 	    	(var2, index2) <- matrix.labels.zipWithIndex
 	    	if var1 != var2
-	    ) {
-	        val value1 = configuration(index1)
-	        val value2 = configuration(index2)
-	        
-	        val impliedValues = mapForConstraints.get((var1, value1, var2))
-	        if (impliedValues.isDefined) {
-	          impliedValues.get += value2
-	        } else {
-	          mapForConstraints += ((var1, value1, var2) -> collection.mutable.Set(value2))
-	        }
-//	        mapForConstraints((var1, value1, var2)) += value2
-	    }
+	  ) {
 	    
-	  }
-	  
-	  
-	  // Create constraints
-	  for (((var1, value, var2), includedValues) <- mapForConstraints) {
-	    // Convert left part to constraint
-	    val constraintVar1 = convertLabelToVariable(var1, features, attributes)
+	    val mapForConstraints = collection.mutable.Map.empty[(String, String, String), collection.mutable.Set[String]]
 	    
-	    val leftConstraint = constraintVar1 match {
-		    case f : Feature => {
-		      if (knowledge.isTrue(f, value)) {
+	    // Compute constraints for these two variables
+		for (configuration <- matrix.configurations) {
+		    val value1 = configuration(index1)
+		    val value2 = configuration(index2)
+		    
+		    val impliedValues = mapForConstraints.get((var1, value1, var2))
+		    if (impliedValues.isDefined) {
+		      impliedValues.get += value2
+		    } else {
+		      mapForConstraints += ((var1, value1, var2) -> collection.mutable.Set(value2))
+		    }
+		}
+	  
+		// Create final constraints
+		for (((var1, value, var2), includedValues) <- mapForConstraints) {
+		  // Convert left part to constraint
+		  val constraintVar1 = convertLabelToVariable(var1, features, attributes)
+		    
+		  val leftConstraint = constraintVar1 match {
+		   	case f : Feature => {
+			    if (knowledge.isTrue(f, value)) {
 			      f
 			    } else {
-			      Not(f)
+				     Not(f)
+				}
+			  }
+			case a : Attribute => Equal(a, value)
+		  }
+		    
+		  // Convert right part to constraint
+		  val constraintVar2 = convertLabelToVariable(var2, features, attributes)
+		    
+		  val rightConstraint = constraintVar2 match {
+			  case f : Feature => {
+			    if (includedValues.size == 2) {
+			   	  True()
+			    } else {
+			   	  if (knowledge.isTrue(f, includedValues.head)) {
+			   	    f
+			  	  } else {
+			   	    Not(f)
+			   	  }
 			    }
-		    }
-		    case a : Attribute => Equal(a, value)
-	    }
-	    
-	    // Convert right part to constraint
-	    val constraintVar2 = convertLabelToVariable(var2, features, attributes)
-	    
-	    val rightConstraint = constraintVar2 match {
-		    case f : Feature => {
-		      if (includedValues.size == 2) {
-		    	  True()
-		      } else {
-		    	  if (knowledge.isTrue(f, includedValues.head)) {
-		    	    f
-		    	  } else {
-		    	    Not(f)
-		    	  }
-		      }
-		    }
-		    case a : Attribute => {
-		      val excludedValues = columnDomains(var2).diff(includedValues)
-		      And(IncludedIn(a, includedValues.toSet), Not(IncludedIn(a, excludedValues)))
-		    }
-	    }
-	    
-	   // Filter trivial constraints
-	    
-	    val constraint = Implies(leftConstraint, rightConstraint)
-	    
-	    constraint match {
-	    	  case Implies(_, True()) => 
-	    	  case _ => constraints += constraint
-	    }
+			  }
+			  case a : Attribute => {
+			    val excludedValues = columnDomains(var2).diff(includedValues)
+			    And(IncludedIn(a, includedValues.toSet), Not(IncludedIn(a, excludedValues)))
+			  }
+		  }
+		    
+		  // Filter trivial constraints
+		    
+		  val constraint = Implies(leftConstraint, rightConstraint)
+		    
+		  constraint match {
+		  	  case Implies(_, True()) => 
+		   	  case _ => constraints += constraint
+		  }
+		}
 	  }
 	  
 	  constraints.toList
