@@ -104,7 +104,7 @@ class FAMAGenerator extends FlatSpec with Matchers {
 		  val outputFile = new File(dir.getAbsolutePath() + "/" + outputName)
 		  println("Generating products for " + inputName)
 		  try {
-			  generateProducts(inputFile, outputFile, 1)
+			  generateProducts(inputFile, outputFile, 1000000)
 		  } catch {
 		    case e : ContradictionException => {
 		      println("contradiction")
