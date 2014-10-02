@@ -29,6 +29,9 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		  println("Computation of OR groups is disabled")
 	  }
 	  
+
+	  var nbSynthesis = 0
+	  var totalTime : Long = 0
 	  println("----------------------------------");
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
 		println(inputFile.getAbsolutePath())
@@ -51,8 +54,12 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 		  println(tag + ": " + time + " ms")
 		}
 		println("----------------------------------");
+		
+		nbSynthesis += 1
+		totalTime += synthesizer.getTimes.find(_._1 == "Synthesis").get._3
 	  }
 
+	  println("Mean synthesis time = " + totalTime / nbSynthesis + " ms");
   }
 
   "AFM synthesis algorithm" should "synthesize AFM from the test set" in {
@@ -118,10 +125,10 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
   
   "Random matrix generator" should "generate random matrices" in {
-    val nbMatrices = 1
-    val nbVariables = 10
-    val nbConfigurations = 100000
-    val maximumDomainSize = 1000
+    val nbMatrices = 10
+    val nbVariables = 100
+    val nbConfigurations = 5000
+    val maximumDomainSize = 10
     
     val random = new Random
     val writer = new CSVConfigurationMatrixWriter

@@ -215,27 +215,23 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	}
 	
 	
-	
-	
-
 	/**
 	 * Extract domains of columns from the matrix
 	 */
 	def extractColumnDomains(matrix : ConfigurationMatrix, knowledge : DomainKnowledge) : Map[String, Set[String]] = {
 	  
-	  val domains = collection.mutable.Map.empty[String, Set[String]]
-		
-	  for ((label, index) <- matrix.labels.zipWithIndex) {
+	  val domains : Map[String, Set[String]] = (for ((label, index) <- matrix.labels.zipWithIndex) yield {
 	    
-	    val values = (for (configuration <- matrix.configurations) yield {
+	    val values : Set[String] = (for (configuration <- matrix.configurations) yield {
 		  configuration(index)
-		}).toSet
+		})(collection.breakOut)
 		
-		domains += (label -> values)
-	  }
+		(label -> values)
+	  })(collection.breakOut)
 	  
-	  domains.toMap
+	  domains
 	}
+	
 	
 	/**
 	 * Extract features and attributes from the matrix
@@ -270,26 +266,25 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: List[Constraint] = {
 
 	  // Create dictionary of matrix values
-	  val dictionaries : collection.mutable.Map[String, Map[String, String]] = collection.mutable.Map.empty
-
-	  for ((label, labelIndex) <- matrix.labels.zipWithIndex) yield {
-	    val dictionary : collection.mutable.Map[String, String] = collection.mutable.Map.empty
-
-	    val values = columnDomains(label)
-	    val attribute = attributes.find(_.name == label)
-	    val sortedValues = if (attribute.isDefined) {
-	      values.toList.sortWith(attribute.get.domain.lessThan)
-	    } else {
-	      values.toList
-	    }
-	    
-	    
-	    for ((value, valueIndex) <- values.zipWithIndex) {
-	    	dictionary += (value -> valueIndex.toString)
-	    }
-	    
-	    dictionaries += (label -> dictionary.toMap) 		
-	  }
+	  val dictionaries : Map[String, Map[String, String]] =
+		  (for ((label, labelIndex) <- matrix.labels.zipWithIndex) yield {
+		    val dictionary : collection.mutable.Map[String, String] = collection.mutable.Map.empty
+	
+		    val values = columnDomains(label)
+		    val attribute = attributes.find(_.name == label)
+		    val sortedValues = if (attribute.isDefined) {
+		      values.toList.sortWith(attribute.get.domain.lessThan)
+		    } else {
+		      values.toList
+		    }
+		    
+		    
+		    for ((value, valueIndex) <- values.zipWithIndex) {
+		    	dictionary += (value -> valueIndex.toString)
+		    }
+		    
+		    (label -> dictionary.toMap) 		
+		  })(collection.breakOut)
 	  
 	  // Convert matrix to reasoner format
 	  val convertedConfigurations = matrix.configurations.map(configuration =>
@@ -316,10 +311,21 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  // Run sicstus reasoner
 	  // sicstus -f -l revfm.pl --goal main. -a configuration_matrix.csv results.txt
+//	  val reasonerCommand = Seq("sicstus", 
+//	      "-f", 
+//	      "-l", 
+//	      "sicstus_reasoner/revfm.pl", 
+//	      "--goal", 
+//	      "main.", 
+//	      "-a", 
+//	      convertedMatrixFile.getAbsolutePath(),
+//	      resultFile.getAbsolutePath()
+//	      )
+	  
 	  val reasonerCommand = Seq("sicstus", 
 	      "-f", 
-	      "-l", 
-	      "sicstus_reasoner/revfm.pl", 
+	      "-r", 
+	      "sicstus_reasoner/revfm.sav", 
 	      "--goal", 
 	      "main.", 
 	      "-a", 
@@ -340,7 +346,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  val pattern = Pattern.compile("Feat(\\d+)\\s=\\s(\\d+)\\s=>\\sFeat(\\d+)\\sin\\s\\[(.*)\\]\\sand\\snot\\sin\\s\\[(.*)\\]")
 	  
-	  val constraints = for (line <- Source.fromFile(resultFile).getLines) yield {
+	  val constraints = (for (line <- Source.fromFile(resultFile).getLines) yield {
 	    val matcher = pattern.matcher(line)
 	    if (matcher.matches()) {
 	    	
@@ -370,7 +376,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	    	println("Following line is not a correct output of Sicstus reasoner: " + line)
 	    	None
 	    }
-	  }
+	  })
 	  
 	  // Delete temporary files
 //	  convertedMatrixFile.delete()
@@ -393,7 +399,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  }
 	}
 	
-	private def convertLeftValueToConstraint(variable : Variable, value : String, invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : DomainKnowledge)
+	private def convertLeftValueToConstraint(variable : Variable, value : String, invertedDictionaries : Map[String, Map[String,String]], knowledge : DomainKnowledge)
 	: Constraint = {
 	  variable match {
 	    case f : Feature => {
@@ -407,7 +413,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  }
 	}
 	
-	private def convertRightValuesToConstraint(variable : Variable, includedValues : List[String], excludedValues : List[String], invertedDictionaries : collection.mutable.Map[String, Map[String,String]], knowledge : DomainKnowledge)
+	private def convertRightValuesToConstraint(variable : Variable, includedValues : List[String], excludedValues : List[String], invertedDictionaries : Map[String, Map[String,String]], knowledge : DomainKnowledge)
 	: Constraint = {
 	  variable match {
 	    case f : Feature => {
@@ -431,8 +437,8 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	
 	def alternativeComputeBinaryImplicationConstraints(matrix : ConfigurationMatrix, features : List[Feature], attributes : List[Attribute], columnDomains : Map[String, Set[String]], knowledge : DomainKnowledge, outputDirPath : String)
 	: List[Constraint] = {
-	  val constraints = ListBuffer.empty[Constraint]
-	  
+
+	  var constraints = List.empty[Constraint]
 	  
 	  for (
 	        (var1, index1) <- matrix.labels.zipWithIndex;
@@ -454,7 +460,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 		      mapForConstraints += ((var1, value1, var2) -> collection.mutable.Set(value2))
 		    }
 		}
-	  
+	    
 		// Create final constraints
 		for (((var1, value, var2), includedValues) <- mapForConstraints) {
 		  // Convert left part to constraint
@@ -498,12 +504,12 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 		    
 		  constraint match {
 		  	  case Implies(_, True()) => 
-		   	  case _ => constraints += constraint
+		   	  case _ => constraints = constraint :: constraints
 		  }
 		}
 	  }
-	  
-	  constraints.toList
+	    
+	  constraints
 	}
 	
 	/**

@@ -41,4 +41,12 @@ trait PerformanceMonitor {
     tagStack = Nil
   }
   
+  def getMemoryUsage() : Long = {
+    val runtime = Runtime.getRuntime
+    runtime.gc()
+    val memory = runtime.totalMemory() - runtime.freeMemory()
+    val usedMB = memory
+    usedMB
+  }
+  
 }
