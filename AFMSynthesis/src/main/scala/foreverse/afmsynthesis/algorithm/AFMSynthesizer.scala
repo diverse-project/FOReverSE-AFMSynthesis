@@ -551,16 +551,15 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
 	  for (attribute <- attributes) {
-	    legalPositions(attribute) = features.toSet
+	    legalPositions(attribute) = Set.empty[Feature]
 	  }
 	  
 	  // If (not f => a = 0d), then the feature f is a legal position for the attribute a
-	  // here we check the negation of this property to remove illegal positions
 	  for (constraint <- constraints) {
 	    constraint match {
 	      case Implies(Not(f : Feature), And(IncludedIn(attribute, impliedValues), _)) =>
-	        if (impliedValues.exists(_ != attribute.domain.nullValue)) {
-	          legalPositions(attribute) = legalPositions(attribute) - f
+          if (impliedValues == Set(attribute.domain.nullValue)) { // TODO : check equality
+	          legalPositions(attribute) = legalPositions(attribute) + f
 	        }
 	      case _ =>  
 	    }
