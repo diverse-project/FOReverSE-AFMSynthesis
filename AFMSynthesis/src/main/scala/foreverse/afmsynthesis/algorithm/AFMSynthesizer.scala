@@ -139,7 +139,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  
 	  top("Or")
-	  var computedOrGroups = if (enableOrGroups && orGroupTimeout.isDefined) {
+	  val computedOrGroups = if (enableOrGroups && orGroupTimeout.isDefined) {
 	    try {
 			val orGroupComputation : Future[List[OrGroup]] = future {
 			  computeOrGroups(matrix, hierarchy, features, knowledge)
@@ -346,7 +346,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  val pattern = Pattern.compile("Feat(\\d+)\\s=\\s(\\d+)\\s=>\\sFeat(\\d+)\\sin\\s\\[(.*)\\]\\sand\\snot\\sin\\s\\[(.*)\\]")
 	  
-	  val constraints = (for (line <- Source.fromFile(resultFile).getLines) yield {
+	  val constraints = for (line <- Source.fromFile(resultFile).getLines) yield {
 	    val matcher = pattern.matcher(line)
 	    if (matcher.matches()) {
 	    	
@@ -376,7 +376,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	    	println("Following line is not a correct output of Sicstus reasoner: " + line)
 	    	None
 	    }
-	  })
+	  }
 	  
 	  // Delete temporary files
 //	  convertedMatrixFile.delete()
@@ -537,7 +537,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	
 	/**
 	 * Extract a particular hierarchy for the AFM
-	 * @param : big : binary implication graph representing all legal hierarchies of the AFM
+	 * @param big : binary implication graph representing all legal hierarchies of the AFM
 	 */
 	def extractHierarchy(big : ImplicationGraph[Feature], knowledge : DomainKnowledge): ImplicationGraph[Feature] = {
 	  knowledge.selectHierarchy(big)
