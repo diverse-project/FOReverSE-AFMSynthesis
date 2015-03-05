@@ -1,4 +1,12 @@
-@(header : Html = Html(""), footer : Html = Html(""))(content: Html)
+@(current : String, next : String, header : Html = Html(""), footer : Html = Html(""))(content: Html)
+
+@active(step : String) = {
+    @if(current == step) {
+        activestep
+    } else {
+
+    }
+}
 
 <!DOCTYPE html>
 
@@ -15,7 +23,68 @@
     </head>
     <body>
         <div class="container">
-            @content
+
+            <!-- Progress Bar -->
+
+            <div class="row">
+                <div class="row step">
+                    <div id="div1" class="col-md-2 @active("step0")" >
+                        <a href="step0">
+                            <span class="fa fa-cloud-upload"></span>
+                            <p>Upload a Matrix</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2 @active("step1")">
+                        <a href="step1">
+                            <span class="fa fa-table"></span>
+                            <p>Features and Attributes</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2 @active("step2")" >
+                        <a href="step2">
+                            <span class="fa fa-list-ul"></span>
+                            <p>Hierarchy</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2 @active("step3")" >
+                        <a href="step3">
+                            <span class="fa fa-group"></span>
+                            <p>Feature Groups</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2 @active("step4")" >
+                        <a href="step4">
+                            <span class="fa fa-check"></span>
+                            <p>Constraints</p>
+                        </a>
+                    </div>
+                    <div id="last" class="col-md-2 @active("step5")" >
+                        <a href="step5">
+                            <span class="fa fa-cloud-download"></span>
+                            <p>AFM</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+
+            <div class="row">
+
+                <div class="col-md-11">
+                    @content
+                </div>
+
+                <div class="col-md-1">
+                    @if(!next.isEmpty) {
+                        <a class="btn btn-default" href="@next"><span class="fa fa-chevron-right"></span></a>
+                    }
+
+                </div>
+
+            </div>
+
+
         </div>
     </body>
 

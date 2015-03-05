@@ -6,16 +6,32 @@
 
 }
 
-@main(header, footer) {
+@main("step1", "step2", header, footer) {
 
-    <div class="row">
-        <div class="col-md-1 col-md-offset-11">
-            <a class="btn btn-primary" href="step2">Next (Hierarchy)</a>
-        </div>
-    </div>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>
+                    F1
+                        <form class="form"> <!-- form-inline -->
+                            <select class="form-control">
+                                <option>Feature</option>
+                                <option>Attribute</option>
+                            </select>
+                            <input type="text" class="form-control" placeholder="Null value">
+                        </form>
+                </th>
+            </tr>
+        </thead>
 
-    <div class="row">
-    </div>
+        <tbody>
+            <tr>
+                <th scope="row">1</th>
+                <td>V1</td>
+            </tr>
+        </tbody>
+    </table>
 
 
 
