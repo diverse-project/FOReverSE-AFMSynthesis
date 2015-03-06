@@ -5,7 +5,7 @@
 # Home page
 GET        /                     controllers.Application.step0
 GET        /step0                controllers.Application.step0
-GET        /step1                controllers.Application.step1
+POST        /step1                controllers.Application.step1
 GET        /step2                controllers.Application.step2
 GET        /step3                controllers.Application.step3
 GET        /step4                controllers.Application.step4

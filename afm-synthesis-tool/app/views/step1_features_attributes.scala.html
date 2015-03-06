@@ -1,3 +1,5 @@
+@(matrix : List[List[String]])
+
 @header = {
 
 }
@@ -12,8 +14,9 @@
         <thead>
             <tr>
                 <th>#</th>
-                <th>
-                    F1
+                @for(feature <- matrix.head) {
+                    <th>
+                        @feature
                         <form class="form"> <!-- form-inline -->
                             <select class="form-control">
                                 <option>Feature</option>
@@ -21,15 +24,22 @@
                             </select>
                             <input type="text" class="form-control" placeholder="Null value">
                         </form>
-                </th>
+                    </th>
+
+                }
             </tr>
         </thead>
 
         <tbody>
-            <tr>
-                <th scope="row">1</th>
-                <td>V1</td>
-            </tr>
+            @for((product, index) <- matrix.tail.zipWithIndex) {
+                <tr>
+                    <th scope="row">@index</th>
+                    @for(cell <- product) {
+                        <td>@cell</td>
+                    }
+                </tr>
+            }
+
         </tbody>
     </table>
 
