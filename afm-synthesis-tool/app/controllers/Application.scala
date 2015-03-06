@@ -56,20 +56,4 @@ object Application extends Controller {
     Ok(views.html.step5_afm())
   }
 
-
-  // TODO : upload file
-  def upload = Action(parse.multipartFormData) { request =>
-    request.body.file("picture").map { picture =>
-      import java.io.File
-      val filename = picture.filename
-      val contentType = picture.contentType
-      picture.ref.moveTo(new File("/tmp/picture"))
-      Ok("File uploaded")
-    }.getOrElse {
-      Redirect(routes.Application.step0()).flashing(
-        "error" -> "Missing file"
-      )
-    }
-  }
-
 }

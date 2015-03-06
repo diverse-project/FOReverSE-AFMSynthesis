@@ -41,3 +41,17 @@
     padding-top: 15px;
     font-size: 40px;
 }
+
+
+.scrollable {
+    width: 100%;
+    overflow: auto;
+}
+
+table {
+    table-layout: fixed;
+}
+
+th {
+    width: 150px;
+}

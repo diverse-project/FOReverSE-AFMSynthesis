@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "org.webjars" % "angularjs" % "1.3.0",
   "org.webjars" % "font-awesome" % "4.3.0-1",
   "com.github.tototoshi" %% "scala-csv" % "1.2.1",
+  "org.webjars" % "jquery-dynatable" % "0.3.1-1",
   jdbc,
   anorm,
   cache,

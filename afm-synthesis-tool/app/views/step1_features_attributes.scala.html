@@ -5,18 +5,22 @@
 }
 
 @footer = {
-
+    <script type='text/javascript' src='@routes.Assets.at("javascripts/double-scroll.js")'></script>
+    <script>
+        $('.double-scroll').doubleScroll();
+    </script>
 }
 
 @main("step1", "step2", header, footer) {
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>#</th>
-                @for(feature <- matrix.head) {
-                    <th>
-                        @feature
+    <div class="scrollable double-scroll">
+        <table class="table table-bordered table-condensed" id="configuration_matrix">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    @for(feature <- matrix.head) {
+                        <th>
+                            @feature
                         <form class="form"> <!-- form-inline -->
                             <select class="form-control">
                                 <option>Feature</option>
@@ -24,13 +28,13 @@
                             </select>
                             <input type="text" class="form-control" placeholder="Null value">
                         </form>
-                    </th>
+                        </th>
 
-                }
-            </tr>
-        </thead>
+                    }
+                </tr>
+            </thead>
 
-        <tbody>
+            <tbody>
             @for((product, index) <- matrix.tail.zipWithIndex) {
                 <tr>
                     <th scope="row">@index</th>
@@ -40,9 +44,8 @@
                 </tr>
             }
 
-        </tbody>
-    </table>
+            </tbody>
+        </table>
 
-
-
+    </div>
 }
