@@ -7,3 +7,14 @@ afmApp.controller("AFMSynthesisController", function($scope, $http) {
 
 });
 
+
+afmApp.controller("Step1Controller", function($scope, $http) {
+
+    $scope.variables= [];
+
+    $scope.isFeature = function (index) {
+        return $scope.variables[index].type == "Feature";
+    }
+
+});
+

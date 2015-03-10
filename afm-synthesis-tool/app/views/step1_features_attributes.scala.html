@@ -11,41 +11,73 @@
     </script>
 }
 
+@toIdentifier(name : String) = {@{
+    name.replaceAll("-","")
+            .replaceAll("–","")
+            .replaceAll(" ", "_")
+            .toLowerCase
+}}
+
 @main("step1", "step2", header, footer) {
 
-    <div class="scrollable double-scroll">
-        <table class="table table-bordered table-condensed" id="configuration_matrix">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    @for(feature <- matrix.head) {
-                        <th>
-                            @feature
-                        <form class="form"> <!-- form-inline -->
-                            <select class="form-control">
-                                <option>Feature</option>
-                                <option>Attribute</option>
-                            </select>
-                            <input type="text" class="form-control" placeholder="Null value">
-                        </form>
-                        </th>
+    <form class="form" action="@routes.Application.step2()" method="post"> <!-- form-inline -->
+        <div class="row center">
 
+            <button type="submit" class="btn btn-primary">Next</button>
+
+        </div>
+
+        <div class="row">
+            <div class="scrollable double-scroll" ng-controller="Step1Controller">
+                <table class="table table-bordered table-condensed" id="configuration_matrix">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            @for((variable, index) <- matrix.head.zipWithIndex) {
+                                <th>
+                                    @variable
+
+
+                                    <select
+                                        class="form-control"
+                                        name="@{index}.type"
+                                        ng-model="variables[@index].type"
+                                        ng-init="variables[@index].type='Feature'"
+                                    >
+                                        <option>Feature</option>
+                                        <option>Attribute</option>
+                                    </select>
+
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        placeholder="Null value"
+                                        name="@{index}.nullValue"
+                                        ng-model="variables[@index].nullValue"
+                                        ng-disabled="isFeature(@index)"
+                                    >
+
+                                </th>
+
+                            }
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    @for((product, index) <- matrix.tail.zipWithIndex) {
+                        <tr>
+                            <th scope="row">@index</th>
+                            @for(cell <- product) {
+                                <td>@cell</td>
+                            }
+                        </tr>
                     }
-                </tr>
-            </thead>
 
-            <tbody>
-            @for((product, index) <- matrix.tail.zipWithIndex) {
-                <tr>
-                    <th scope="row">@index</th>
-                    @for(cell <- product) {
-                        <td>@cell</td>
-                    }
-                </tr>
-            }
+                    </tbody>
+                </table>
 
-            </tbody>
-        </table>
+            </div>
+        </div>
+    </form>
 
-    </div>
 }

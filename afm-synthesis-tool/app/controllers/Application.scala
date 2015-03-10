@@ -40,7 +40,14 @@ object Application extends Controller {
 
   }
 
-  def step2 = Action {
+  def step2 = Action { request =>
+    val variableTypes = request.body.asFormUrlEncoded.get.map(t => (t._1, t._2.head))
+
+
+    for ((variable, variableType) <- variableTypes) {
+      println(variable + " -> " + variableType)
+    }
+
     Ok(views.html.step2_hierarchy())
   }
 
