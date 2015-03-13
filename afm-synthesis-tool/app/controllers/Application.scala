@@ -4,7 +4,7 @@ import java.io.File
 import java.util.UUID
 
 import com.github.tototoshi.csv._
-//import foreverse.afmsynthesis.algorithm.AFMSynthesizer
+import foreverse.afmsynthesis.algorithm.AFMSynthesizer
 import play.api._
 import play.api.mvc._
 
@@ -36,7 +36,7 @@ object Application extends Controller {
       val matrix = reader.all()
       reader.close()
 
-//      val synthesizer = new AFMSynthesizer()
+      val synthesizer = new AFMSynthesizer()
 
       // Delete the temporary file
       uploadedFile.delete()
