@@ -8,7 +8,12 @@ name := "AFMSynthesis"
 
 version := "0.1"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.1"
 
-libraryDependencies += "com.assembla.scala-incubator" %% "graph-core" % "1.9.0"
+libraryDependencies ++=  Seq(
+  "com.assembla.scala-incubator" %% "graph-core" % "1.9.0",
+  "com.assembla.scala-incubator" %% "graph-dot" % "1.9.0",
+  "com.github.tototoshi" %% "scala-csv" % "1.2.1",
+  "org.scalatest" %% "scalatest" % "2.2.1"
+)
 

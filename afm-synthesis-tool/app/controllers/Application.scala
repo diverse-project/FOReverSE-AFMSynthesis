@@ -1,12 +1,20 @@
 package controllers
 
 import java.io.File
+import java.util.UUID
 
 import com.github.tototoshi.csv._
+//import foreverse.afmsynthesis.algorithm.AFMSynthesizer
 import play.api._
 import play.api.mvc._
 
+import scala.collection.mutable
+
+
 object Application extends Controller {
+
+  type Matrix = List[List[String]]
+  val matrices = mutable.Map.empty[String, Matrix] // FIXME : not thread safe !
 
   def index = Action {
     Ok(views.html.step0_load())
@@ -28,27 +36,39 @@ object Application extends Controller {
       val matrix = reader.all()
       reader.close()
 
+//      val synthesizer = new AFMSynthesizer()
+
       // Delete the temporary file
       uploadedFile.delete()
 
-      Ok(views.html.step1_features_attributes(matrix))
+      val sessionID = UUID.randomUUID().toString
+
+      matrices += sessionID -> matrix
+
+      Ok(views.html.step1_features_attributes(matrix)).withSession("id" -> sessionID)
     }.getOrElse {
-      Redirect(routes.Application.step0()).flashing(
-        "error" -> "Missing file"
-      )
+      Redirect(routes.Application.step0())
     }
 
   }
 
   def step2 = Action { request =>
-    val variableTypes = request.body.asFormUrlEncoded.get.map(t => (t._1, t._2.head))
 
+    request.session.get("id").map{ sessionID =>
 
-    for ((variable, variableType) <- variableTypes) {
-      println(variable + " -> " + variableType)
+      val matrix = matrices.get(sessionID)
+
+      val variableTypes = request.body.asFormUrlEncoded.get.map(t => (t._1, t._2.head))
+      for ((variable, variableType) <- variableTypes) {
+
+      }
+
+      Ok(views.html.step2_hierarchy())
+    }.getOrElse {
+      Redirect(routes.Application.step0())
     }
 
-    Ok(views.html.step2_hierarchy())
+
   }
 
   def step3 = Action {

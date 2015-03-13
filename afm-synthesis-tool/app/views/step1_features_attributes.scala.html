@@ -27,6 +27,8 @@
 
         </div>
 
+        <br/>
+
         <div class="row">
             <div class="scrollable double-scroll" ng-controller="Step1Controller">
                 <table class="table table-bordered table-condensed" id="configuration_matrix">
@@ -40,7 +42,7 @@
 
                                     <select
                                         class="form-control"
-                                        name="@{index}.type"
+                                        name="@{variable}.type"
                                         ng-model="variables[@index].type"
                                         ng-init="variables[@index].type='Feature'"
                                     >
@@ -52,7 +54,7 @@
                                         type="text"
                                         class="form-control"
                                         placeholder="Null value"
-                                        name="@{index}.nullValue"
+                                        name="@{variable}.nullValue"
                                         ng-model="variables[@index].nullValue"
                                         ng-disabled="isFeature(@index)"
                                     >

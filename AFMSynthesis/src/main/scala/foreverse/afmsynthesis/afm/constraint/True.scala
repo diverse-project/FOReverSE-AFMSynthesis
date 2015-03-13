@@ -1,5 +1,5 @@
 package foreverse.afmsynthesis.afm.constraint
 
-case class True extends Constraint {
+case class True() extends Constraint {
 
 }
