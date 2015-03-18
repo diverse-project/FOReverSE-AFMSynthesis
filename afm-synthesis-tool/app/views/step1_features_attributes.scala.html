@@ -21,13 +21,12 @@
 @main("step1", "step2", header, footer) {
 
     <form class="form" action="@routes.Application.step2()" method="post"> <!-- form-inline -->
-        <div class="row center">
+        <div class="row center btn-next">
 
             <button type="submit" class="btn btn-primary">Next</button>
 
         </div>
 
-        <br/>
 
         <div class="row">
             <div class="scrollable double-scroll" ng-controller="Step1Controller">

@@ -15,6 +15,8 @@ object Application extends Controller {
 
   type Matrix = List[List[String]]
   val matrices = mutable.Map.empty[String, Matrix] // FIXME : not thread safe !
+  val synthesizers = mutable.Map.empty[String, AFMSynthesizer] // FIXME : not thread safe !
+  // FIXME : empty maps when possible
 
   def index = Action {
     Ok(views.html.step0_load())
@@ -36,14 +38,21 @@ object Application extends Controller {
       val matrix = reader.all()
       reader.close()
 
-      val synthesizer = new AFMSynthesizer()
+
 
       // Delete the temporary file
       uploadedFile.delete()
 
-      val sessionID = UUID.randomUUID().toString
 
+      // Start synthesis
+      val synthesizer = new AFMSynthesizer()
+      //synthesizer.synthesize()
+
+
+      // Create working session
+      val sessionID = UUID.randomUUID().toString
       matrices += sessionID -> matrix
+      synthesizers += sessionID -> synthesizer
 
       Ok(views.html.step1_features_attributes(matrix)).withSession("id" -> sessionID)
     }.getOrElse {
@@ -57,6 +66,7 @@ object Application extends Controller {
     request.session.get("id").map{ sessionID =>
 
       val matrix = matrices.get(sessionID)
+      val synthesizer = synthesizers.get(sessionID)
 
       val variableTypes = request.body.asFormUrlEncoded.get.map(t => (t._1, t._2.head))
       for ((variable, variableType) <- variableTypes) {
