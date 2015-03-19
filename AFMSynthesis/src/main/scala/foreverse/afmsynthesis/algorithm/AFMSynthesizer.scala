@@ -1,71 +1,29 @@
 package foreverse.afmsynthesis.algorithm
 
-import java.io.File
-import java.io.FileWriter
+import java.io.{File, FileWriter}
+import java.util.HashSet
 import java.util.regex.Pattern
-import scala.Array.canBuildFrom
-import scala.Option.option2Iterable
-import scala.collection.JavaConversions.asScalaSet
-import scala.collection.JavaConversions.collectionAsScalaIterable
-import scala.collection.JavaConversions.mutableSetAsJavaSet
-import scala.collection.JavaConversions.seqAsJavaList
-import scala.collection.TraversableOnce.flattenTraversableOnce
-import scala.collection.mutable.ListBuffer
-import scala.io.Source
-import scala.sys.process.ProcessLogger
-import scala.sys.process.stringSeqToProcess
-import org.jgrapht.alg.TransitiveClosure
+
 import com.github.tototoshi.csv.CSVWriter
-import dk.itu.fms.formula.dnf.DNF
-import dk.itu.fms.formula.dnf.DNFClause
-import foreverse.afmsynthesis.afm.Attribute
-import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
-import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.FeatureGroup
-import foreverse.afmsynthesis.afm.DomainKnowledge
-import foreverse.afmsynthesis.afm.Mandatory
-import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.Relation
-import foreverse.afmsynthesis.afm.XorGroup
-import foreverse.afmsynthesis.afm.constraint.AttributeOperator
-import foreverse.afmsynthesis.afm.constraint.AttributeValue
-import foreverse.afmsynthesis.afm.constraint.Constraint
-import foreverse.afmsynthesis.afm.constraint.Equal
-import foreverse.afmsynthesis.afm.constraint.FeatureValue
-import foreverse.afmsynthesis.afm.constraint.Not
-import foreverse.afmsynthesis.afm.constraint.Variable
-import foreverse.afmsynthesis.test.PerformanceMonitor
+import dk.itu.fms.formula.dnf.{DNF, DNFClause}
+import foreverse.afmsynthesis.afm.{Attribute, AttributedFeatureDiagram, AttributedFeatureModel, Domain, DomainKnowledge, Feature, FeatureGroup, Mandatory, MutexGroup, OrGroup, Relation, XorGroup}
+import foreverse.afmsynthesis.afm.constraint.{And, Constraint, Equal, Excludes, Greater, GreaterOrEqual, Implies, IncludedIn, Less, LessOrEqual, Not, True, Variable}
+import foreverse.afmsynthesis.test.{PerformanceMonitor, SynthesisMonitor}
 import fr.familiar.fm.converter.ExclusionGraph
 import fr.familiar.operations.ExclusionGraphUtil
 import gsd.graph.ImplicationGraph
-import foreverse.afmsynthesis.afm.constraint.Equal
-import foreverse.afmsynthesis.afm.constraint.Implies
-import foreverse.afmsynthesis.afm.Attribute
-import foreverse.afmsynthesis.afm.constraint.True
-import foreverse.afmsynthesis.afm.constraint.IncludedIn
-import foreverse.afmsynthesis.afm.constraint.And
-import foreverse.afmsynthesis.afm.constraint.Implies
-import foreverse.afmsynthesis.afm.constraint.Excludes
-import foreverse.afmsynthesis.afm.Domain
-import foreverse.afmsynthesis.afm.constraint.LessOrEqual
-import scala.util.Random
-import foreverse.afmsynthesis.afm.OrGroup
-import java.util.HashSet
-import foreverse.afmsynthesis.test.SynthesisMonitor
-import foreverse.afmsynthesis.afm.constraint.Equal
-import foreverse.afmsynthesis.afm.constraint.IncludedIn
-import foreverse.afmsynthesis.afm.constraint.Less
-import foreverse.afmsynthesis.afm.constraint.LessOrEqual
-import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
-import foreverse.afmsynthesis.afm.constraint.Greater
-import scala.concurrent.future
-import scala.concurrent.Await
+import org.jgrapht.alg.TransitiveClosure
+
+import scala.Array.canBuildFrom
+import scala.Option.option2Iterable
+import scala.collection.JavaConversions.{asScalaSet, collectionAsScalaIterable, mutableSetAsJavaSet, seqAsJavaList}
+import scala.collection.TraversableOnce.flattenTraversableOnce
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import scala.concurrent.TimeoutException
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, Future, TimeoutException, future}
+import scala.io.Source
+import scala.sys.process.{ProcessLogger, stringSeqToProcess}
 
 class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
   
@@ -551,15 +509,15 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  // Compute legal positions for the attributes
 	  val legalPositions = collection.mutable.Map.empty[Attribute, Set[Feature]]
 	  for (attribute <- attributes) {
-	    legalPositions(attribute) = Set.empty[Feature]
+	    legalPositions(attribute) = features.toSet
 	  }
 	  
 	  // If (not f => a = 0d), then the feature f is a legal position for the attribute a
 	  for (constraint <- constraints) {
 	    constraint match {
 	      case Implies(Not(f : Feature), And(IncludedIn(attribute, impliedValues), _)) =>
-          if (impliedValues == Set(attribute.domain.nullValue)) { // TODO : check equality
-	          legalPositions(attribute) = legalPositions(attribute) + f
+          if (impliedValues.exists(_ != attribute.domain.nullValue)) { 
+	          legalPositions(attribute) = legalPositions(attribute) - f
 	        }
 	      case _ =>  
 	    }

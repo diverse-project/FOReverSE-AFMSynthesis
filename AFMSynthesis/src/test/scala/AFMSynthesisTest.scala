@@ -1,18 +1,14 @@
-package foreverse.afmsynthesis.test
-
 import java.io.File
-
-import scala.Array.canBuildFrom
-import scala.util.Random
-
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
 
 import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
 import foreverse.afmsynthesis.algorithm.AFMSynthesizer
 import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
-import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
-import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
+import foreverse.afmsynthesis.test.RandomMatrixGenerator
+import foreverse.afmsynthesis.writer.{CSVConfigurationMatrixWriter, ModelBasedFAMAWriter}
+import org.scalatest.{FlatSpec, Matchers}
+
+import scala.Array.canBuildFrom
+import scala.util.Random
 
 class AFMSynthesisTest extends FlatSpec with Matchers{
   
@@ -34,29 +30,29 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  var totalTime : Long = 0
 	  println("----------------------------------");
 	  for (inputFile <- dir.listFiles() if inputFile.getName().endsWith(".csv")) {
-		println(inputFile.getAbsolutePath())
-		val matrix = parser.parse(inputFile.getAbsolutePath, dummyRoot, rootName(inputFile.getName()))
-		val knowledge = new SimpleDomainKnowledge
+      println(inputFile.getAbsolutePath())
+      val matrix = parser.parse(inputFile.getAbsolutePath, dummyRoot, rootName(inputFile.getName()))
+      val knowledge = new SimpleDomainKnowledge
 
-		val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, Some(3), "output/synthesized/")
-		val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))
-		writer.write(afm, outputFile)
-		
-		println()
-		println("Metrics")
-		for ((name, value) <- synthesizer.metrics) {
-		  println(name + " = " + value)
-		}
-		
-		println()
-		println("Performances")
-		for ((tag, depth, time) <- synthesizer.getTimes) {
-		  println(tag + ": " + time + " ms")
-		}
-		println("----------------------------------");
-		
-		nbSynthesis += 1
-		totalTime += synthesizer.getTimes.find(_._1 == "Synthesis").get._3
+      val afm = synthesizer.synthesize(matrix, knowledge, enableOrGroups, Some(3), "output/synthesized/")
+      val outputFile = new File(OUTPUT_DIR + inputFile.getName().replaceAll(".csv", ".afm"))
+      writer.write(afm, outputFile)
+
+      println()
+      println("Metrics")
+      for ((name, value) <- synthesizer.metrics) {
+        println(name + " = " + value)
+      }
+
+      println()
+      println("Performances")
+      for ((tag, depth, time) <- synthesizer.getTimes) {
+        println(tag + ": " + time + " ms")
+      }
+      println("----------------------------------");
+
+      nbSynthesis += 1
+      totalTime += synthesizer.getTimes.find(_._1 == "Synthesis").get._3
 	  }
 
 	  println("Mean synthesis time = " + totalTime / nbSynthesis + " ms");
@@ -68,17 +64,17 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
   
   
-  it should "synthesize AFM from randomly generated AFMs" in {
+  ignore should "synthesize AFM from randomly generated AFMs" in {
     val dir = new File(GENERATED_DIR)
     synthesizeAFMFromDir(dir, false, false)
   }
-  
-  it should "synthesize a specific directory" in {
+
+  ignore should "synthesize a specific directory" in {
     val dir = new File("check_that_Random_1000_100_10_false_1980594031")
     synthesizeAFMFromDir(dir, false, false)
   }
-  
-  it should "be complete" in {
+
+  ignore should "be complete" in {
     val parser = new FastCSVConfigurationMatrixParser
     val inputDir = new File(INPUT_DIR)
 //    val inputDir = new File(INPUT_DIR)

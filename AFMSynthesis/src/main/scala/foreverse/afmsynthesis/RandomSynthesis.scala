@@ -1,6 +1,5 @@
 package foreverse.afmsynthesis
 
-import foreverse.afmsynthesis.test.AFMSynthesisTest
 import java.io.File
 import scala.util.Random
 import foreverse.afmsynthesis.algorithm.AFMSynthesizer
