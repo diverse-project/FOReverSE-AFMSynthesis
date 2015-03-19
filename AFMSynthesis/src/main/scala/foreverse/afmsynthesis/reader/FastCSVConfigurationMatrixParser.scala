@@ -32,7 +32,7 @@ class FastCSVConfigurationMatrixParser extends CSVConfigurationMatrixParser {
 	line = reader.readLine()
 	while(Option(line).isDefined) {
 	  val configuration = processLine(line)
-	  
+
 	  if (dummyRoot) {
 	    configurations += "1" +: configuration
 	  } else {

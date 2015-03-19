@@ -10,5 +10,16 @@ class Attribute(
   override def toString() : String = {
 	"Attribute(" + name + ")"// ", " + domain + ")"
   }
-  
+
+  def hasIntegerDomain(): Boolean = {
+    domain.values.forall { v =>
+      try {
+        v.toInt
+        true
+      } catch {
+        case e : NumberFormatException => false
+      }
+    }
+  }
+
 } 

@@ -17,7 +17,7 @@ import foreverse.afmsynthesis.afm.constraint.LessOrEqual
 import foreverse.afmsynthesis.afm.constraint.Not
 import foreverse.afmsynthesis.afm.constraint.Equal
 import foreverse.afmsynthesis.afm.Attribute
-import fr.familiar.attributedfm.domain.SetIntegerDomain
+import fr.familiar.attributedfm.domain.{StringDomain, SetIntegerDomain}
 import fr.familiar.attributedfm.GenericAttribute
 import foreverse.afmsynthesis.afm.constraint.Implies
 import fr.familiar.attributedfm.ExcludesDependency
@@ -33,6 +33,8 @@ import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
 import foreverse.afmsynthesis.afm.constraint.Greater
 import foreverse.afmsynthesis.afm.constraint.Greater
 
+import collection.JavaConversions._
+
 class ModelBasedFAMAWriter extends FAMAWriter {
 
   var afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature] = _
@@ -43,7 +45,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 
 	  // Create FAMA features
 	  afd = afm.diagram
-	  afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(f.name))).toMap
+	  afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(filterName(f.name)))).toMap
 //	  for ((feature, famaFeature) <- afmToFAMA) {
 //	    famaFeature.setName(feature.name)
 //	  }
@@ -56,7 +58,20 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 	  file.delete()
 	  writer.writeFile(file.getAbsolutePath(), famaAFM)
   }
-  
+
+  private def filterName(name : String): String = {
+    name.replaceAll(" ", "_")
+      .replaceAll("\"", "")
+      .replaceAll("\\(", "")
+      .replaceAll("\\)", "")
+      .replaceAll("-", "")
+      .replaceAll("\\.", "")
+      .replaceAll("\\|", "")
+      .replaceAll(",", "")
+      .replaceAll("/", "")
+      .replaceAll(";", "")
+  }
+
   private def writeHierarchy(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     
     val hierarchy = afd.hierarchy
@@ -111,16 +126,31 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   private def writeAttributes(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     for ((feature, famaFeature) <- afmToFAMA) {
     	for (attribute <- feature.attributes) {
-    	  val name = attribute.name
+    	  val name = filterName(attribute.name)
+
+        val integerDomain = attribute.hasIntegerDomain()
+
+    	  val domain = if (integerDomain) {
+          val intValues : java.util.Set[Integer] = new HashSet[Integer]
+          attribute.domain.values.foreach(v => intValues.add(v.toInt))
+          new SetIntegerDomain(intValues)
+        } else {
+          new StringDomain(attribute.domain.values.toList.map(filterName(_)))
+        }
     	  
-    	  val intValues : java.util.Set[Integer] = new HashSet[Integer]
-    	  attribute.domain.values.foreach(v => intValues.add(v.toInt))
-    	  val domain = new SetIntegerDomain(intValues)
+    	  val nullValue = if (integerDomain) {
+          attribute.domain.nullValue.toInt
+        } else {
+          filterName(attribute.domain.nullValue)
+        }
+
+    	  val defaultValue = if (integerDomain) {
+          attribute.domain.values.head.toInt
+        } else {
+          filterName(attribute.domain.values.head)
+        }
     	  
-    	  val nullValue = attribute.domain.nullValue.toInt
-    	  val defaultValue = attribute.domain.values.head.toInt
-    	  
-    	  val famaAttribute = new GenericAttribute(attribute.name, domain, nullValue, defaultValue)
+    	  val famaAttribute = new GenericAttribute(name, domain, nullValue, defaultValue)
     	  
     	  famaFeature.addAttribute(famaAttribute)
     	}
@@ -137,7 +167,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   
   private def attributeToFama(attribute : Attribute) : String = {
       val feature = afd.features.find(_.attributes.contains(attribute))
-      feature.get.name + "." + attribute.name
+      filterName(feature.get.name) + "." + filterName(attribute.name)
   }
   
   private def constraintToFAMA(constraint : Constraint) : fr.familiar.attributedfm.Constraint = {
@@ -157,13 +187,13 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   
   private def complexConstraintToFAMA(constraint : Constraint) : String = {
     constraint match {
-      case f : Feature => f.name
-      case Not(f : Feature) => "NOT " + f.name + ""
-      case Equal(a, value) => attributeToFama(a) + " == " + value
-      case Less(a, value) => attributeToFama(a) + " < " + value
-      case LessOrEqual(a, value) => attributeToFama(a) + " <= " + value
-      case Greater(a, value) => attributeToFama(a) + " > " + value
-      case GreaterOrEqual(a, value) => attributeToFama(a) + " >= " + value
+      case f : Feature => filterName(f.name)
+      case Not(f : Feature) => "NOT " + filterName(f.name) + ""
+      case Equal(a, value) => attributeToFama(a) + " == " + filterName(value)
+      case Less(a, value) => attributeToFama(a) + " < " + filterName(value)
+      case LessOrEqual(a, value) => attributeToFama(a) + " <= " + filterName(value)
+      case Greater(a, value) => attributeToFama(a) + " > " + filterName(value)
+      case GreaterOrEqual(a, value) => attributeToFama(a) + " >= " + filterName(value)
 //      case _ => throw new UnsupportedOperationException
     }
   }

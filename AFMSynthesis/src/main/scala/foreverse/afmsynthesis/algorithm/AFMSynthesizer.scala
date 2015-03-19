@@ -181,8 +181,8 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  val domains : Map[String, Set[String]] = (for ((label, index) <- matrix.labels.zipWithIndex) yield {
 	    
 	    val values : Set[String] = (for (configuration <- matrix.configurations) yield {
-		  configuration(index)
-		})(collection.breakOut)
+		    configuration(index)
+		  })(collection.breakOut)
 		
 		(label -> values)
 	  })(collection.breakOut)
@@ -516,7 +516,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  for (constraint <- constraints) {
 	    constraint match {
 	      case Implies(Not(f : Feature), And(IncludedIn(attribute, impliedValues), _)) =>
-          if (impliedValues.exists(_ != attribute.domain.nullValue)) { 
+          if (impliedValues.exists(_ != attribute.domain.nullValue)) {
 	          legalPositions(attribute) = legalPositions(attribute) - f
 	        }
 	      case _ =>  
@@ -910,12 +910,12 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	        
 	        val bound = constraintBounds(a1)
 	        
-	        val relatedMap = if (v1.toInt < bound.toInt) {
-		      lessMap
-	        } else if (v1.toInt > bound.toInt) {
-	          greaterMap
+	        val relatedMap = if (v1 == bound) {
+            equalMap
+	        } else if (a1.domain.lessThan(v1, bound)) {
+	          lessMap
 	        } else {
-	          equalMap
+            greaterMap
 	        }
 	        
 	        val (prevIncluded, prevExcluded) = relatedMap.getOrElse(attributePair, (Set.empty[String], a2.domain.values))

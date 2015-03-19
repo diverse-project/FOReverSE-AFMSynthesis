@@ -23,7 +23,8 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     
 	  for (label <- matrix.labels) yield {
 		val values = columnDomains(label)
-		if (values.forall(v => v == "0" || v == "1")) {
+		if (values.forall(v => v == "0" || v == "1") ||
+      values.forall(v => v == "Yes" || v == "No")) {
 		  features += new Feature(label)
 		} else {
 			
@@ -78,7 +79,7 @@ class SimpleDomainKnowledge extends DomainKnowledge {
   }
   
   override def isTrue(feature : Feature, value : String) : Boolean = {
-    value == "1"
+    value == "1" || value == "Yes"
   }
   
   override def getConstraintBound(attribute : Attribute) : String = {

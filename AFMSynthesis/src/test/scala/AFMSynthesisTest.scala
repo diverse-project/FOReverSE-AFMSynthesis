@@ -58,7 +58,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  println("Mean synthesis time = " + totalTime / nbSynthesis + " ms");
   }
 
-  "AFM synthesis algorithm" should "synthesize AFM from the test set" in {
+   ignore should "synthesize AFM from the test set" in { // "AFM synthesis algorithm"
 	val dir = new File(INPUT_DIR)
 	synthesizeAFMFromDir(dir, true, false, _ => "root")
   }
@@ -69,10 +69,10 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
     synthesizeAFMFromDir(dir, false, false)
   }
 
-  ignore should "synthesize a specific directory" in {
-    val dir = new File("check_that_Random_1000_100_10_false_1980594031")
-    synthesizeAFMFromDir(dir, false, false)
-  }
+//  it should "synthesize a specific directory" in {
+//    val dir = new File("check_that_Random_1000_100_10_false_1980594031")
+//    synthesizeAFMFromDir(dir, false, false)
+//  }
 
   ignore should "be complete" in {
     val parser = new FastCSVConfigurationMatrixParser
@@ -120,7 +120,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
     }
   }
   
-  "Random matrix generator" should "generate random matrices" in {
+  ignore should "generate random matrices" in { //"Random matrix generator"
     val nbMatrices = 10
     val nbVariables = 100
     val nbConfigurations = 5000
