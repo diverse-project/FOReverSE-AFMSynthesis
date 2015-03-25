@@ -833,14 +833,18 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  for (constraint <- constraints) {
 	    val ctc = constraint match {
-	      case Implies(left, And(IncludedIn(attribute, values), _)) => 
-	        val max = findUpperBound(attribute.domain, values)
-	        if (max.isDefined) {
-	          Some(Implies(left, LessOrEqual(attribute, max.get)))
-	        } else {
-	          None
-	        }
-	        
+	      case Implies(left, And(IncludedIn(attribute, values), _)) =>
+          if (values.size == 1) {
+            Some(Implies(left, Equal(attribute, values.head)))
+          } else {
+            val max = findUpperBound(attribute.domain, values)
+            if (max.isDefined) {
+              Some(Implies(left, LessOrEqual(attribute, max.get)))
+            } else {
+              None
+            }
+          }
+
 	      case _ => None
 	    }
 	    
@@ -857,19 +861,37 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	 * If it is true, it returns its upper bound
 	 */
 	def findUpperBound(domain : Domain, values : Set[String]) : Option[String] =  {
+
+    var upperBound = Option.empty[String]
+
 		if (!values.isEmpty) {
-			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
-			val sortedValues = values.toList.sortWith(domain.lessThan)
-			val max = sortedValues.last
-			if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
-				Some(max)
-			} else {
-				None
-			}
-		} else {
-		  None
+      // Find max of values
+      val sortedValues = values.toList.sortWith(domain.lessThan)
+      val max = sortedValues.last
+
+      // Check uniqueness of maximum
+      if (values.forall(v => v == max || domain.lessThan(v, max))) {
+
+        // Find part of the domain that is greater than this maximum
+        val lowerPartOfDomain = domain.values.filter(v => v == max || domain.lessThan(v, max))
+
+        // Check if values is equal to the lower part of the domain
+        if (values == lowerPartOfDomain && lowerPartOfDomain.size < domain.values.size) {
+          upperBound = Some(max)
+        }
+      }
+      // Old version
+//			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+//			val sortedValues = values.toList.sortWith(domain.lessThan)
+//			val max = sortedValues.last
+//			if (sortedDomainValues.startsWith(sortedValues) && max != sortedDomainValues.last) {
+//				Some(max)
+//			} else {
+//				None
+//			}
 		}
-		
+
+    upperBound
 	}
 	
 	/**
@@ -877,18 +899,36 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	 * If it is true, it returns its lower bound
 	 */
 	def findLowerBound(domain : Domain, values : Set[String]) : Option[String] =  {
+
+    var lowerBound = Option.empty[String]
+
 	  if (!values.isEmpty) {
-			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
-			val sortedValues = values.toList.sortWith(domain.lessThan)
-			val min = sortedValues.head
-			if (sortedDomainValues.endsWith(sortedValues) && min != sortedDomainValues.head) {
-				Some(min)
-			} else {
-				None
-			}
-		} else {
-		  None
+      // Find min of values
+      val sortedValues = values.toList.sortWith(domain.lessThan)
+      val min = sortedValues.head
+
+      // Check uniqueness of minimum
+      if (values.forall(v => v == min || domain.lessThan(min, v))) {
+
+        // Find part of the domain that is lesser than this minimum
+        val upperPartOfDomain = domain.values.filter(v => v == min || domain.lessThan(min, v))
+
+        // Check if values is equal to the upper part of the domain
+        if (values == upperPartOfDomain && upperPartOfDomain.size < domain.values.size) {
+          lowerBound = Some(min)
+        }
+      }
+
+      // Old version
+//			val sortedDomainValues = domain.values.toList.sortWith(domain.lessThan)
+//			val sortedValues = values.toList.sortWith(domain.lessThan)
+//			val min = sortedValues.head
+//			if (sortedDomainValues.endsWith(sortedValues) && min != sortedDomainValues.head) {
+//				lowerBound = Some(min)
+//			}
 		}
+
+    lowerBound
 	}
 	
 	/**
