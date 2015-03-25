@@ -4,7 +4,9 @@ import java.io.File
 import java.util.UUID
 
 import com.github.tototoshi.csv._
-import foreverse.afmsynthesis.algorithm.AFMSynthesizer
+import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
+import foreverse.afmsynthesis.algorithm.{ConfigurationMatrix, AFMSynthesizer}
+import model.InteractiveDomainKnowledge
 import play.api._
 import play.api.mvc._
 
@@ -45,8 +47,10 @@ object Application extends Controller {
 
 
       // Start synthesis
+      val knowledge = new InteractiveDomainKnowledge;
       val synthesizer = new AFMSynthesizer()
-      //synthesizer.synthesize()
+      val configurationMatrix = new ConfigurationMatrix(matrix.head.toArray, matrix.tail.map(_.toArray))
+      synthesizer.synthesize(configurationMatrix, knowledge, true, Some(3), "/tmp")
 
 
       // Create working session

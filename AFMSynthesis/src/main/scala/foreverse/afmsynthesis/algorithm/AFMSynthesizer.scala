@@ -34,13 +34,14 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  
 	  top("Synthesis")
 	  
-	
+
 	  
 	  // Extract the features, the attributes and their domains
 	  top("Domain extraction")
 	  val columnDomains = extractColumnDomains(matrix, knowledge)
 	  top()
-	  
+
+
 	  top("Feature and attribute extraction")
 	  val (features, attributes) = extractFeaturesAndAttributes(matrix, columnDomains, knowledge)
 	  val domains = (for (attribute <- attributes) yield {
@@ -49,9 +50,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  top()
 	  setMetric("#features", features.size.toString)
 	  setMetric("#attributes", attributes.size.toString)
-	  
-	  
-	  
+
 	  // Compute binary implications
 	  top("Binary implications")
 //	  val constraints = computeBinaryImplicationConstraints(matrix, features, attributes, columnDomains, knowledge, outputDirPath)
@@ -65,7 +64,7 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	  top()
 	  
 	  setMetric("#binary constraints", constraints.size.toString)
-	  
+	  //constraints.foreach(println)
 	  
 	  
 	  // Define the hierarchy
@@ -198,22 +197,27 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: (List[Feature], List[Attribute]) = {
 	  // Separate features from attributes w.r.t. the knowledge
 	  val (features, attributes) = knowledge.extractFeaturesAndAttributes(matrix, domains)
-	  
+
 	  // Remove dead features
 	  val aliveFeatures = features.filter(feature => domains(feature.name).exists(knowledge.isTrue(feature, _)))
-	  
+
 	  if (aliveFeatures.size < features.size) {
-	    val filteredLabels = matrix.labels.filter(label => aliveFeatures.exists(_.name == label))
+	    val filteredLabels = matrix.labels.filter(label =>
+        aliveFeatures.exists(_.name == label) ||
+          attributes.exists(_.name == label)
+      )
+
 	    val filteredConfigurations = for (configuration <- matrix.configurations) yield {
 	      val filteredConfiguration = configuration.zipWithIndex.filter(
-	          value => aliveFeatures.exists(_.name == matrix.labels(value._2)))
+	          value => (aliveFeatures.exists(_.name == matrix.labels(value._2)) ||
+              attributes.exists(_.name == matrix.labels(value._2))))
 	      filteredConfiguration.map(_._1)
 	      
 	    }
 	    matrix.labels = filteredLabels
 	    matrix.configurations = filteredConfigurations
 	  }
-	  
+
 	  (aliveFeatures, attributes)
 	}
 
@@ -397,13 +401,14 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	: List[Constraint] = {
 
 	  var constraints = List.empty[Constraint]
-	  
+
+    var trivialConstraints = 0
+
 	  for (
 	        (var1, index1) <- matrix.labels.zipWithIndex;
 	    	(var2, index2) <- matrix.labels.zipWithIndex
 	    	if var1 != var2
 	  ) {
-	    
 	    val mapForConstraints = collection.mutable.Map.empty[(String, String, String), collection.mutable.Set[String]]
 	    
 	    // Compute constraints for these two variables
@@ -461,12 +466,14 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 		  val constraint = Implies(leftConstraint, rightConstraint)
 		    
 		  constraint match {
-		  	  case Implies(_, True()) => 
+		  	  case Implies(_, True()) => trivialConstraints += 1
 		   	  case _ => constraints = constraint :: constraints
 		  }
 		}
 	  }
-	    
+
+    setMetric("#trivial binary constraints", trivialConstraints.toString)
+
 	  constraints
 	}
 	

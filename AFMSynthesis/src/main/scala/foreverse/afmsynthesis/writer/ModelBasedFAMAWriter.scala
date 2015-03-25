@@ -179,6 +179,9 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded))
         case Implies(left, right) => 
           val constraintString = complexConstraintToFAMA(left) + " IMPLIES " + complexConstraintToFAMA(right)
+          if (constraintString.contains("No")) {
+            println(constraintString)
+          }
           new ComplexConstraint(constraintString)
 //        case _ => throw new UnsupportedOperationException
       }

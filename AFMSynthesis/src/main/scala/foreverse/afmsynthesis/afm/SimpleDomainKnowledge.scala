@@ -36,7 +36,7 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		      val intB = b.toInt
 		      intA < intB
 		    } catch {
-		      case e : NumberFormatException => a < b 
+		      case e : NumberFormatException => false
 		    }
 		  }
 		  
