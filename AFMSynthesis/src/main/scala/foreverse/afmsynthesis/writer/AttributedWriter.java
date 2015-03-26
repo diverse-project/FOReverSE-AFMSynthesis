@@ -30,12 +30,7 @@ import fr.familiar.attributedfm.Constraint;
 import fr.familiar.attributedfm.Feature;
 import fr.familiar.attributedfm.GenericAttribute;
 import fr.familiar.attributedfm.Relation;
-import fr.familiar.attributedfm.domain.Cardinality;
-import fr.familiar.attributedfm.domain.Domain;
-import fr.familiar.attributedfm.domain.ObjectDomain;
-import fr.familiar.attributedfm.domain.Range;
-import fr.familiar.attributedfm.domain.RangeIntegerDomain;
-import fr.familiar.attributedfm.domain.SetIntegerDomain;
+import fr.familiar.attributedfm.domain.*;
 
 public class AttributedWriter {
 
@@ -143,6 +138,18 @@ public class AttributedWriter {
 				domainStr += "]";
 
 
+			} else if (domain instanceof StringDomain) {
+				StringDomain dom = ((StringDomain) domain);
+
+				int domainSize = dom.getAllIntegerValues().size();
+
+				domainStr += "[";
+				for (int i = 0; i < domainSize; i++) {
+					domainStr += dom.getValue(i) + ",";
+				}
+				domainStr = domainStr.substring(0, domainStr.length() - 1);
+				domainStr += "]";
+
 			} else if (domain instanceof ObjectDomain) {
 				ObjectDomain dom = ((ObjectDomain) domain);
 				if (dom.getObjectValues().size()>0){
@@ -157,6 +164,7 @@ public class AttributedWriter {
 				domainStr += "]";
 				}
 			}
+
 			
 			
 				attributesCol.add(attLine + domainStr + ","

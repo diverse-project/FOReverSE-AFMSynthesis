@@ -52,7 +52,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 	  
 	  writeHierarchy(famaAFM, afmToFAMA)
 	  writeAttributes(famaAFM, afmToFAMA)
-	  writeConstraints(famaAFM)
+	  //writeConstraints(famaAFM)
 	  
 	  val writer = new AttributedWriter
 	  file.delete()
@@ -179,7 +179,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded))
         case Implies(left, right) => 
           val constraintString = complexConstraintToFAMA(left) + " IMPLIES " + complexConstraintToFAMA(right)
-          if (constraintString.contains("No")) {
+          if (constraintString.contains("NA")) {
             println(constraintString)
           }
           new ComplexConstraint(constraintString)
