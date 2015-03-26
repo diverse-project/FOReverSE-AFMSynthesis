@@ -1,13 +1,11 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.algorithm
 
-import foreverse.ksynthesis.mst.WeightedImplicationGraph
-import gsd.graph.ImplicationGraph
-import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
-import scala.collection.mutable.ListBuffer
-import foreverse.ksynthesis.mst.OptimumBranchingFinder
+import foreverse.afmsynthesis.afm._
+import foreverse.ksynthesis.mst.{OptimumBranchingFinder, WeightedImplicationGraph}
+import gsd.graph.{ImplicationGraph, SimpleEdge}
+
 import scala.collection.JavaConversions._
-import gsd.graph.SimpleEdge
-import foreverse.ksynthesis.metrics.RandomMetric
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 class SimpleDomainKnowledge extends DomainKnowledge {
@@ -39,9 +37,13 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		      case e : NumberFormatException => false
 		    }
 		  }
-		  
-		  val domain = new Domain(values, nullValue, inferior)
-		
+
+      val domain = if (values.forall(v => isInteger(v) || v == "N/A")) {
+        new IntegerDomain(values, nullValue, inferior)
+      } else {
+        new StringDomain(values, nullValue, inferior)
+      }
+
 		  attributes += new Attribute(label, domain)
 		}
 	  }
@@ -86,5 +88,14 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     val values = attribute.domain.values.toList
     values(random.nextInt(values.size))
   }
-  
+
+  private def isInteger(value : String): Boolean = {
+    try {
+      value.toInt
+      true
+    } catch {
+      case e : NumberFormatException => false
+    }
+  }
+
 }

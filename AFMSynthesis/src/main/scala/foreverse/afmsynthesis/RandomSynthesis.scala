@@ -1,16 +1,13 @@
 package foreverse.afmsynthesis
 
-import java.io.File
-import scala.util.Random
-import foreverse.afmsynthesis.algorithm.AFMSynthesizer
-import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
-import foreverse.afmsynthesis.writer.ModelBasedFAMAWriter
-import foreverse.afmsynthesis.test.RandomMatrixGenerator
-import foreverse.afmsynthesis.writer.CSVConfigurationMatrixWriter
-import java.nio.file.Files
-import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
+import java.io.{File, FileWriter}
+
 import com.github.tototoshi.csv.CSVWriter
-import java.io.FileWriter
+import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, AFMSynthesizer}
+import foreverse.afmsynthesis.test.RandomMatrixGenerator
+import foreverse.afmsynthesis.writer.{CSVConfigurationMatrixWriter, ModelBasedFAMAWriter}
+
+import scala.util.Random
 
 /**
  * @param output directory

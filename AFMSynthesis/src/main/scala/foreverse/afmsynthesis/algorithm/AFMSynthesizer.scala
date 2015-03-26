@@ -6,8 +6,8 @@ import java.util.regex.Pattern
 
 import com.github.tototoshi.csv.CSVWriter
 import dk.itu.fms.formula.dnf.{DNF, DNFClause}
-import foreverse.afmsynthesis.afm.{Attribute, AttributedFeatureDiagram, AttributedFeatureModel, Domain, DomainKnowledge, Feature, FeatureGroup, Mandatory, MutexGroup, OrGroup, Relation, XorGroup}
 import foreverse.afmsynthesis.afm.constraint.{And, Constraint, Equal, Excludes, Greater, GreaterOrEqual, Implies, IncludedIn, Less, LessOrEqual, Not, True, Variable}
+import foreverse.afmsynthesis.afm.{Attribute, AttributedFeatureDiagram, AttributedFeatureModel, Domain, Feature, FeatureGroup, Mandatory, MutexGroup, OrGroup, Relation, XorGroup}
 import foreverse.afmsynthesis.test.{PerformanceMonitor, SynthesisMonitor}
 import fr.familiar.fm.converter.ExclusionGraph
 import fr.familiar.operations.ExclusionGraphUtil

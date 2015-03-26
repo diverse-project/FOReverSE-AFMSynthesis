@@ -3,35 +3,13 @@ package foreverse.afmsynthesis.writer
 import java.io.File
 import java.util.HashSet
 import scala.collection.JavaConversions.asScalaSet
-import foreverse.afmsynthesis.afm.AttributedFeatureDiagram
-import foreverse.afmsynthesis.afm.AttributedFeatureModel
-import foreverse.afmsynthesis.afm.Feature
-import foreverse.afmsynthesis.afm.Mandatory
-import foreverse.afmsynthesis.afm.MutexGroup
-import foreverse.afmsynthesis.afm.Optional
-import foreverse.afmsynthesis.afm.OrGroup
-import foreverse.afmsynthesis.afm.XorGroup
-import foreverse.afmsynthesis.afm.constraint.Excludes
-import foreverse.afmsynthesis.afm.constraint.Implies
-import foreverse.afmsynthesis.afm.constraint.LessOrEqual
-import foreverse.afmsynthesis.afm.constraint.Not
-import foreverse.afmsynthesis.afm.constraint.Equal
-import foreverse.afmsynthesis.afm.Attribute
+import foreverse.afmsynthesis.afm._
+import foreverse.afmsynthesis.afm.constraint._
 import fr.familiar.attributedfm.domain.{StringDomain, SetIntegerDomain}
 import fr.familiar.attributedfm.GenericAttribute
-import foreverse.afmsynthesis.afm.constraint.Implies
 import fr.familiar.attributedfm.ExcludesDependency
 import fr.familiar.attributedfm.ComplexConstraint
 import fr.familiar.attributedfm.RequiresDependency
-import foreverse.afmsynthesis.afm.constraint.Equal
-import foreverse.afmsynthesis.afm.constraint.Excludes
-import foreverse.afmsynthesis.afm.constraint.Not
-import foreverse.afmsynthesis.afm.constraint.Less
-import foreverse.afmsynthesis.afm.constraint.Constraint
-import foreverse.afmsynthesis.afm.constraint.LessOrEqual
-import foreverse.afmsynthesis.afm.constraint.GreaterOrEqual
-import foreverse.afmsynthesis.afm.constraint.Greater
-import foreverse.afmsynthesis.afm.constraint.Greater
 
 import collection.JavaConversions._
 
@@ -45,22 +23,22 @@ class ModelBasedFAMAWriter extends FAMAWriter {
 
 	  // Create FAMA features
 	  afd = afm.diagram
-	  afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(filterName(f.name)))).toMap
+	  afmToFAMA = afd.features.map(f => (f -> new fr.familiar.attributedfm.Feature(filterVariableName(f.name)))).toMap
 //	  for ((feature, famaFeature) <- afmToFAMA) {
 //	    famaFeature.setName(feature.name)
 //	  }
 	  
 	  writeHierarchy(famaAFM, afmToFAMA)
 	  writeAttributes(famaAFM, afmToFAMA)
-	  //writeConstraints(famaAFM)
+	  writeConstraints(famaAFM)
 	  
 	  val writer = new AttributedWriter
 	  file.delete()
 	  writer.writeFile(file.getAbsolutePath(), famaAFM)
   }
 
-  private def filterName(name : String): String = {
-    name.replaceAll(" ", "_")
+  private def filterVariableName(name : String): String = {
+    val filteredName = name.replaceAll(" ", "_")
       .replaceAll("\"", "")
       .replaceAll("\\(", "")
       .replaceAll("\\)", "")
@@ -70,6 +48,11 @@ class ModelBasedFAMAWriter extends FAMAWriter {
       .replaceAll(",", "")
       .replaceAll("/", "")
       .replaceAll(";", "")
+    if (filteredName.matches("\\d.*")) {
+     "_" + filteredName
+    } else {
+      filteredName
+    }
   }
 
   private def writeHierarchy(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
@@ -126,7 +109,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   private def writeAttributes(famaAFM : fr.familiar.attributedfm.AttributedFeatureModel, afmToFAMA : Map[Feature, fr.familiar.attributedfm.Feature]) {
     for ((feature, famaFeature) <- afmToFAMA) {
     	for (attribute <- feature.attributes) {
-    	  val name = filterName(attribute.name)
+    	  val name = filterVariableName(attribute.name)
 
         val integerDomain = attribute.hasIntegerDomain()
 
@@ -135,19 +118,19 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           attribute.domain.values.foreach(v => intValues.add(v.toInt))
           new SetIntegerDomain(intValues)
         } else {
-          new StringDomain(attribute.domain.values.toList.map(filterName(_)))
+          new StringDomain(attribute.domain.values.toList.map(filterVariableName(_)))
         }
     	  
     	  val nullValue = if (integerDomain) {
           attribute.domain.nullValue.toInt
         } else {
-          filterName(attribute.domain.nullValue)
+          filterVariableName(attribute.domain.nullValue)
         }
 
     	  val defaultValue = if (integerDomain) {
           attribute.domain.values.head.toInt
         } else {
-          filterName(attribute.domain.values.head)
+          filterVariableName(attribute.domain.values.head)
         }
     	  
     	  val famaAttribute = new GenericAttribute(name, domain, nullValue, defaultValue)
@@ -167,7 +150,7 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   
   private def attributeToFama(attribute : Attribute) : String = {
       val feature = afd.features.find(_.attributes.contains(attribute))
-      filterName(feature.get.name) + "." + filterName(attribute.name)
+      filterVariableName(feature.get.name) + "." + filterVariableName(attribute.name)
   }
   
   private def constraintToFAMA(constraint : Constraint) : fr.familiar.attributedfm.Constraint = {
@@ -179,9 +162,6 @@ class ModelBasedFAMAWriter extends FAMAWriter {
           new ExcludesDependency(afmToFAMA(feature), afmToFAMA(excluded))
         case Implies(left, right) => 
           val constraintString = complexConstraintToFAMA(left) + " IMPLIES " + complexConstraintToFAMA(right)
-          if (constraintString.contains("NA")) {
-            println(constraintString)
-          }
           new ComplexConstraint(constraintString)
 //        case _ => throw new UnsupportedOperationException
       }
@@ -190,14 +170,23 @@ class ModelBasedFAMAWriter extends FAMAWriter {
   
   private def complexConstraintToFAMA(constraint : Constraint) : String = {
     constraint match {
-      case f : Feature => filterName(f.name)
-      case Not(f : Feature) => "NOT " + filterName(f.name) + ""
-      case Equal(a, value) => attributeToFama(a) + " == " + filterName(value)
-      case Less(a, value) => attributeToFama(a) + " < " + filterName(value)
-      case LessOrEqual(a, value) => attributeToFama(a) + " <= " + filterName(value)
-      case Greater(a, value) => attributeToFama(a) + " > " + filterName(value)
-      case GreaterOrEqual(a, value) => attributeToFama(a) + " >= " + filterName(value)
-//      case _ => throw new UnsupportedOperationException
+      case f : Feature => filterVariableName(f.name)
+      case Not(f : Feature) => "NOT " + filterVariableName(f.name) + ""
+      case attributeOperator : AttributeOperator => {
+        val operator = attributeOperator match {
+          case Equal(a, value) => " == "
+          case Less(a, value) => " < "
+          case LessOrEqual(a, value) => " <= "
+          case Greater(a, value) => " > "
+          case GreaterOrEqual(a, value) => " >= "
+        }
+        val value = attributeOperator.attribute.domain match {
+          case d : IntegerDomain => attributeOperator.value
+          case _ =>  '"' + filterVariableName(attributeOperator.value) + '"'
+        }
+        attributeToFama(attributeOperator.attribute) + operator + value
+      }
+      case _ => throw new UnsupportedOperationException
     }
   }
   

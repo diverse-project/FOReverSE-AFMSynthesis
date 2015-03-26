@@ -1,7 +1,6 @@
 import java.io.File
 
-import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
-import foreverse.afmsynthesis.algorithm.AFMSynthesizer
+import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, AFMSynthesizer}
 import foreverse.afmsynthesis.reader.FastCSVConfigurationMatrixParser
 import foreverse.afmsynthesis.test.RandomMatrixGenerator
 import foreverse.afmsynthesis.writer.{CSVConfigurationMatrixWriter, ModelBasedFAMAWriter}

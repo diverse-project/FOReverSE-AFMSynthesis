@@ -1,6 +1,6 @@
 package foreverse.afmsynthesis.afm
 
-class Domain(
+abstract class Domain(
     val values : Set[String], 
     val nullValue : String, 
     val lessThan : (String, String) => Boolean

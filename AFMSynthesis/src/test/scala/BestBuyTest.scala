@@ -1,10 +1,9 @@
-import java.io.{FileWriter, File}
+import java.io.File
 
-import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
-import foreverse.afmsynthesis.algorithm.{ConfigurationMatrix, AFMSynthesizer}
-import foreverse.afmsynthesis.reader.{CSVConfigurationMatrixParser, FastCSVConfigurationMatrixParser}
+import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, AFMSynthesizer, ConfigurationMatrix}
+import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
 import foreverse.afmsynthesis.writer.{CSVConfigurationMatrixWriter, ModelBasedFAMAWriter}
-import org.scalatest.{Matchers, FlatSpec}
+import org.scalatest.{FlatSpec, Matchers}
 
 /**
  * Created by gbecan on 3/19/15.

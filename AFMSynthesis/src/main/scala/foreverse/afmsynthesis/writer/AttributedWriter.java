@@ -145,7 +145,7 @@ public class AttributedWriter {
 
 				domainStr += "[";
 				for (int i = 0; i < domainSize; i++) {
-					domainStr += dom.getValue(i) + ",";
+					domainStr += '"' + dom.getValue(i).toString() + '"' + ",";
 				}
 				domainStr = domainStr.substring(0, domainStr.length() - 1);
 				domainStr += "]";

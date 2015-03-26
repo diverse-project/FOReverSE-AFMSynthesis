@@ -1,6 +1,6 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.algorithm
 
-import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
+import foreverse.afmsynthesis.afm.{Attribute, Feature, Relation}
 import gsd.graph.ImplicationGraph
 
 trait DomainKnowledge {

@@ -1,12 +1,12 @@
-package foreverse.afmsynthesis.afm
+package foreverse.afmsynthesis.algorithm
 
-import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
-import scala.collection.immutable.Map
+import foreverse.afmsynthesis.afm._
+import foreverse.ksynthesis.mst.{OptimumBranchingFinder, WeightedImplicationGraph}
 import gsd.graph.ImplicationGraph
-import scala.collection.mutable.ListBuffer
-import foreverse.ksynthesis.mst.OptimumBranchingFinder
-import foreverse.ksynthesis.mst.WeightedImplicationGraph
+
 import scala.collection.JavaConversions._
+import scala.collection.immutable.Map
+import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowledge {
@@ -30,7 +30,7 @@ class AFMDomainKnowledge(val afm : AttributedFeatureModel) extends DomainKnowled
 		    
 		  val lessThan = kAttribute.domain.lessThan
 		  
-		  val domain = new Domain(values, nullValue, lessThan)
+		  val domain = new IntegerDomain(values, nullValue, lessThan)
 		
 		  attributes += new Attribute(label, domain)
 		}
