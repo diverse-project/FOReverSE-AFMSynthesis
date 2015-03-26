@@ -26,8 +26,6 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		  features += new Feature(label)
 		} else {
 			
-		  val nullValue = "0" 
-		    
 		  val inferior = (a : String, b : String) => {
 		    try {
 		      val intA = a.toInt
@@ -39,9 +37,9 @@ class SimpleDomainKnowledge extends DomainKnowledge {
 		  }
 
       val domain = if (values.forall(v => isInteger(v) || v == "N/A")) {
-        new IntegerDomain(values, nullValue, inferior)
+        new IntegerDomain(values, "0", inferior)
       } else {
-        new StringDomain(values, nullValue, inferior)
+        new StringDomain(values, "N/A", inferior)
       }
 
 		  attributes += new Attribute(label, domain)
