@@ -58,8 +58,8 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
   }
 
   ignore should "synthesize AFM from the test set" in { // "AFM synthesis algorithm"
-	val dir = new File(INPUT_DIR)
-	synthesizeAFMFromDir(dir, true, false, _ => "root")
+    val dir = new File(INPUT_DIR)
+    synthesizeAFMFromDir(dir, true, false, _ => "root")
   }
   
   

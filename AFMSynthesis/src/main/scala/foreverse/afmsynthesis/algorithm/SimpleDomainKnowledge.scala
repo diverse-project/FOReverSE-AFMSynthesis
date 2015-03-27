@@ -18,33 +18,39 @@ class SimpleDomainKnowledge extends DomainKnowledge {
     
 	  val features : ListBuffer[Feature] = ListBuffer.empty
 	  val attributes : ListBuffer[Attribute] = ListBuffer.empty
-    
-	  for (label <- matrix.labels) yield {
-		val values = columnDomains(label)
-		if (values.forall(v => v == "0" || v == "1") ||
-      values.forall(v => v == "Yes" || v == "No")) {
-		  features += new Feature(label)
-		} else {
-			
-		  val inferior = (a : String, b : String) => {
-		    try {
-		      val intA = a.toInt
-		      val intB = b.toInt
-		      intA < intB
-		    } catch {
-		      case e : NumberFormatException => false
-		    }
-		  }
 
-      val domain = if (values.forall(v => isInteger(v) || v == "N/A")) {
-        new IntegerDomain(values, "0", inferior)
+    for (label <- matrix.labels) yield {
+      val values = columnDomains(label)
+      if (values.forall(v => v == "0" || v == "1") ||
+        values.forall(v => v == "Yes" || v == "No")) {
+        features += new Feature(label)
       } else {
-        new StringDomain(values, "N/A", inferior)
+
+        val inferior = (a : String, b : String) => {
+          try {
+            val intA = a.toInt
+            val intB = b.toInt
+            intA < intB
+          } catch {
+            case e : NumberFormatException => false
+          }
+        }
+
+        val domain = if (values.forall(v => isInteger(v) || v == "N/A")) {
+          new IntegerDomain(values, "0", inferior)
+        } else {
+          new StringDomain(values, "N/A", inferior)
+        }
+
+        attributes += new Attribute(label, domain)
+
       }
 
-		  attributes += new Attribute(label, domain)
-		}
-	  }
+
+    }
+
+
+
 
 	  (features.toList, attributes.toList)
   }

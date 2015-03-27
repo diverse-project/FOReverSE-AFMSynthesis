@@ -958,16 +958,19 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	        val bound = constraintBounds(a1)
 	        
 	        val relatedMap = if (v1 == bound) {
-            equalMap
+            Some(equalMap)
 	        } else if (a1.domain.lessThan(v1, bound)) {
-	          lessMap
+	          Some(lessMap)
+	        } else if (a1.domain.lessThan(bound, v1)) {
+            Some(greaterMap)
 	        } else {
-            greaterMap
-	        }
-	        
-	        val (prevIncluded, prevExcluded) = relatedMap.getOrElse(attributePair, (Set.empty[String], a2.domain.values))
-		    relatedMap += (attributePair -> (prevIncluded union included, prevExcluded intersect excluded))  
-		    
+						None
+					}
+
+					if (relatedMap.isDefined) {
+						val (prevIncluded, prevExcluded) = relatedMap.get.getOrElse(attributePair, (Set.empty[String], a2.domain.values))
+						relatedMap.get += (attributePair -> (prevIncluded union included, prevExcluded intersect excluded))
+					}
 	      }
 	      
 	      case _ => 
@@ -980,18 +983,30 @@ class AFMSynthesizer extends PerformanceMonitor with SynthesisMonitor {
 	    val (lessIncluded, lessExcluded) = lessMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
 	    val (greaterIncluded, greaterExcluded) = greaterMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
 	    val (equalIncluded, equalExcluded) = equalMap.getOrElse((a1, a2), (Set.empty[String], a2.domain.values))
-	    
-	    val a1Values = a1.domain.values.toList
-	    val sortedA1Values = a1Values.sortWith(a1.domain.lessThan)
-	    
-	    addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded, lessExcluded, Less(a1, bound))
-	    addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded, greaterExcluded, Greater(a1, bound))
-	    if (sortedA1Values.head != bound) {
-	    	addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded union equalIncluded, lessExcluded intersect equalExcluded, LessOrEqual(a1, bound))
-	    }
-	    if (sortedA1Values.last != bound) {
-	    	addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded union equalIncluded, greaterExcluded intersect equalExcluded, GreaterOrEqual(a1, bound))  
-	    }
+
+			// FIXME : sorting values does not work with partial order !
+//	    val a1Values = a1.domain.values.toList
+//	    val sortedA1Values = a1Values.sortWith(a1.domain.lessThan)
+
+			val boundIsMaximum = a1.domain.values.forall(v => v == bound || a1.domain.lessThan(v, bound))
+			val boundIsMinimum = a1.domain.values.forall(v => v == bound || a1.domain.lessThan(bound, v))
+
+			if (!lessIncluded.isEmpty) {
+				addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded, lessExcluded, Less(a1, bound))
+
+				if (!boundIsMaximum) {
+					addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, lessIncluded union equalIncluded, lessExcluded intersect equalExcluded, LessOrEqual(a1, bound))
+				}
+			}
+
+			if (!greaterIncluded.isEmpty) {
+				addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded, greaterExcluded, Greater(a1, bound))
+
+				if (!boundIsMinimum) {
+					addComplexCrossTreeConstraint(crossTreeConstraints, a1, a2, greaterIncluded union equalIncluded, greaterExcluded intersect equalExcluded, GreaterOrEqual(a1, bound))
+				}
+			}
+
 	    
 	    
 	  }
