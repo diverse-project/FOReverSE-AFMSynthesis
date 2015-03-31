@@ -48,6 +48,10 @@ class ModelBasedFAMAWriter extends FAMAWriter {
       .replaceAll(",", "")
       .replaceAll("/", "")
       .replaceAll(";", "")
+      .replaceAll("&", "")
+      .replaceAll(":", "")
+      .replaceAll("#", "")
+      .replaceAll("$", "")
     if (filteredName.matches("\\d.*")) {
      "_" + filteredName
     } else {
