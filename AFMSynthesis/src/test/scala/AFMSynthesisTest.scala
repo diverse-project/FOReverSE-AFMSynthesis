@@ -57,7 +57,7 @@ class AFMSynthesisTest extends FlatSpec with Matchers{
 	  println("Mean synthesis time = " + totalTime / nbSynthesis + " ms");
   }
 
-  ignore should "synthesize AFM from the test set" in { // "AFM synthesis algorithm"
+  "AFM synthesis algorithm" should "synthesize AFM from the test set" in { // "AFM synthesis algorithm"
     val dir = new File(INPUT_DIR)
     synthesizeAFMFromDir(dir, true, false, _ => "root")
   }
