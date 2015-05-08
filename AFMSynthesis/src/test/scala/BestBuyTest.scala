@@ -14,7 +14,7 @@ class BestBuyTest extends FlatSpec with Matchers {
   val dir = new File("input/bestbuy/")
   val OUTPUT_DIR = "output/synthesized/"
 
-  "AFM synthesizer" should "synthesize AFMs from BestBuy PCms" in { // "AFM synthesizer"
+  ignore should "synthesize AFMs from BestBuy PCms" in { // "AFM synthesizer"
 
       val parser = new CSVConfigurationMatrixParser
       val synthesizer = new AFMSynthesizer
@@ -127,5 +127,25 @@ class BestBuyTest extends FlatSpec with Matchers {
     } catch {
       case e : NumberFormatException => false
     }
+  }
+
+  "SPLC experiment" should "interpret the best buy dataset" in {
+
+    val inputDir = new File("input/bestbuy/dataset")
+    val outputDir = new File("input/bestbuy/dataset-interpreted")
+
+    outputDir.mkdirs()
+    val inputFiles = inputDir.listFiles()
+    val parser = new CSVConfigurationMatrixParser
+
+    for (inputFile <- inputFiles) {
+      val matrix = parser.parse(inputFile.getAbsolutePath, true, "root")
+
+      interpret(matrix)
+
+      val csvWriter = new CSVConfigurationMatrixWriter
+      csvWriter.writeToCSV(matrix, new File(outputDir.getAbsolutePath + "/" + inputFile.getName()))
+    }
+
   }
 }

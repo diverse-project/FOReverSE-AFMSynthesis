@@ -50,7 +50,7 @@ object Application extends Controller {
       val knowledge = new InteractiveDomainKnowledge;
       val synthesizer = new AFMSynthesizer()
       val configurationMatrix = new ConfigurationMatrix(matrix.head.toArray, matrix.tail.map(_.toArray))
-      synthesizer.synthesize(configurationMatrix, knowledge, true, Some(3), "/tmp")
+      //synthesizer.synthesize(configurationMatrix, knowledge, true, Some(3), "/tmp")
 
 
       // Create working session

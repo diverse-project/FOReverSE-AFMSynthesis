@@ -49,6 +49,10 @@ object AFMSynthesis extends App {
   val csvReader = new CSVConfigurationMatrixParser
   val matrix = csvReader.parse(matrixFile.getAbsolutePath, arbitraryRoot, rootName.getOrElse("root"))
 
+  val nbVariables = matrix.labels.size
+  val nbConfigurations = matrix.configurations.size
+  val maximumDomainSize = matrix.labels.zipWithIndex.map(li => matrix.configurations.map(c => c(li._2)).distinct.size).max
+
   val synthesizer = new AFMSynthesizer
 
   val logWriter = new FileWriter(outputDirPath + "log.txt")
