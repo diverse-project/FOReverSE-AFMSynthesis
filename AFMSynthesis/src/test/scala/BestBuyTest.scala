@@ -1,5 +1,6 @@
 import java.io.File
 
+import com.github.tototoshi.csv.CSVWriter
 import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, AFMSynthesizer, ConfigurationMatrix}
 import foreverse.afmsynthesis.reader.CSVConfigurationMatrixParser
 import foreverse.afmsynthesis.writer.{CSVConfigurationMatrixWriter, ModelBasedFAMAWriter}
@@ -138,14 +139,30 @@ class BestBuyTest extends FlatSpec with Matchers {
     val inputFiles = inputDir.listFiles()
     val parser = new CSVConfigurationMatrixParser
 
+    val statsCSVWriter = CSVWriter.open("stats_bb.csv")
+    statsCSVWriter.writeRow(Seq("min", "mean", "avg", "max"))
+
     for (inputFile <- inputFiles) {
       val matrix = parser.parse(inputFile.getAbsolutePath, true, "root")
 
       interpret(matrix)
 
+
+      val domainSizes = (for (i <- 0 until matrix.labels.size) yield {
+        val column = matrix.configurations.map(a => a(i))
+        column.distinct.size
+      }).sorted
+      val avg = domainSizes.sum / domainSizes.size
+      val min = domainSizes.head
+      val max = domainSizes.last
+      val median = domainSizes(domainSizes.size / 2)
+      statsCSVWriter.writeRow(Seq(min, median, avg, max))
+
       val csvWriter = new CSVConfigurationMatrixWriter
       csvWriter.writeToCSV(matrix, new File(outputDir.getAbsolutePath + "/" + inputFile.getName()))
     }
+
+    statsCSVWriter.close()
 
   }
 }
