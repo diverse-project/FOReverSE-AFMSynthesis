@@ -3,15 +3,15 @@ package controllers
 import java.io.File
 import java.util.UUID
 
+import akka.actor.Props
 import com.github.tototoshi.csv._
-import foreverse.afmsynthesis.afm.SimpleDomainKnowledge
-import foreverse.afmsynthesis.algorithm.{ConfigurationMatrix, AFMSynthesizer}
-import model.InteractiveDomainKnowledge
+import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, ConfigurationMatrix, AFMSynthesizer}
+import model.{SynthesisWorker, InteractiveDomainKnowledge}
 import play.api._
 import play.api.mvc._
 
 import scala.collection.mutable
-
+import akka.actor.ActorSystem
 
 object Application extends Controller {
 
@@ -47,11 +47,19 @@ object Application extends Controller {
 
 
       // Start synthesis
-      val knowledge = new InteractiveDomainKnowledge;
+      // TODO : create synthesis worker
+      val prop = Props[SynthesisWorker]
+      val system = ActorSystem("afm-synthesis-system")
+      val synthesisWorker = system.actorOf(prop)
+      synthesisWorker ! "toto"
+      // TODO : start synthesis
+//      val knowledge = new InteractiveDomainKnowledge;
+      val knowledge = new SimpleDomainKnowledge;
       val synthesizer = new AFMSynthesizer()
       val configurationMatrix = new ConfigurationMatrix(matrix.head.toArray, matrix.tail.map(_.toArray))
-      //synthesizer.synthesize(configurationMatrix, knowledge, true, Some(3), "/tmp")
-
+      println(configurationMatrix.labels.toList)
+      configurationMatrix.configurations.toList.foreach(c => println(c.toList))
+      synthesizer.synthesize(configurationMatrix, knowledge, true, Some(3), "/tmp")
 
       // Create working session
       val sessionID = UUID.randomUUID().toString
@@ -74,7 +82,7 @@ object Application extends Controller {
 
       val variableTypes = request.body.asFormUrlEncoded.get.map(t => (t._1, t._2.head))
       for ((variable, variableType) <- variableTypes) {
-
+        // TODO : send column types to synthesis worker
       }
 
       Ok(views.html.step2_hierarchy())

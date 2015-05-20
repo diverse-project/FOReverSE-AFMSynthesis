@@ -1,7 +1,7 @@
 package model
 
-import foreverse.afmsynthesis.afm.{Attribute, Relation, Feature, DomainKnowledge}
-import foreverse.afmsynthesis.algorithm.ConfigurationMatrix
+import foreverse.afmsynthesis.afm.{Attribute, Relation, Feature}
+import foreverse.afmsynthesis.algorithm.{DomainKnowledge, ConfigurationMatrix}
 
 import scala.concurrent.Promise
 

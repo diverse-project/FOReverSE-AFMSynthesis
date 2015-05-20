@@ -1,3 +1,5 @@
+import play.PlayScala
+
 name := """afm-synthesis-tool"""
 
 version := "1.0-SNAPSHOT"
@@ -12,7 +14,10 @@ libraryDependencies ++= Seq(
   "org.webjars" % "angularjs" % "1.3.0",
   "org.webjars" % "font-awesome" % "4.3.0-1",
   "com.github.tototoshi" %% "scala-csv" % "1.2.1",
-  "org.webjars" % "jquery-dynatable" % "0.3.1-1",
+  "com.assembla.scala-incubator" %% "graph-core" % "1.9.0",
+  "com.assembla.scala-incubator" %% "graph-dot" % "1.9.0",
+  "com.github.tototoshi" %% "scala-csv" % "1.2.1",
+  "org.scalatest" %% "scalatest" % "2.2.1",
   jdbc,
   anorm,
   cache,
