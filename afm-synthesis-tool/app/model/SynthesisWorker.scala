@@ -8,6 +8,8 @@ import akka.actor.Actor.Receive
  */
 class SynthesisWorker extends Actor {
 
+  val domainKnowledge = new InteractiveDomainKnowledge(self)
+
   override def receive: Receive = {
     case "toto" => println("yeah")
     case _ => println("error")

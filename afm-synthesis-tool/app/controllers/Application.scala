@@ -15,6 +15,9 @@ import akka.actor.ActorSystem
 
 object Application extends Controller {
 
+  val prop = Props[SynthesisWorker]
+  val system = ActorSystem("afm-synthesis-system")
+
   type Matrix = List[List[String]]
   val matrices = mutable.Map.empty[String, Matrix] // FIXME : not thread safe !
   val synthesizers = mutable.Map.empty[String, AFMSynthesizer] // FIXME : not thread safe !
@@ -46,13 +49,8 @@ object Application extends Controller {
       uploadedFile.delete()
 
 
-      // Start synthesis
-      // TODO : create synthesis worker
-      val prop = Props[SynthesisWorker]
-      val system = ActorSystem("afm-synthesis-system")
+      // Create synthesis worker
       val synthesisWorker = system.actorOf(prop)
-      synthesisWorker ! "toto"
-      // TODO : start synthesis
 //      val knowledge = new InteractiveDomainKnowledge;
       val knowledge = new SimpleDomainKnowledge;
       val synthesizer = new AFMSynthesizer()

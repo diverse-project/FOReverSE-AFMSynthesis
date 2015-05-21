@@ -1,5 +1,6 @@
 package model
 
+import akka.actor.ActorRef
 import foreverse.afmsynthesis.afm.{Attribute, Relation, Feature}
 import foreverse.afmsynthesis.algorithm.{DomainKnowledge, ConfigurationMatrix}
 
@@ -8,10 +9,11 @@ import scala.concurrent.Promise
 /**
  * Created by gbecan on 3/24/15.
  */
-class InteractiveDomainKnowledge extends DomainKnowledge {
+class InteractiveDomainKnowledge(val actor : ActorRef) extends DomainKnowledge {
 
   override def extractFeaturesAndAttributes(matrix: ConfigurationMatrix, columnDomains: Map[String, Set[String]]): (List[Feature], List[Attribute]) = {
     // TODO : use future to get the result
+
 //    var toto : (List[Feature], List[Attribute]) = (Nil, Nil)
 //
 //    extractFeaturesAndAttributesAsync().future.onSuccess {
