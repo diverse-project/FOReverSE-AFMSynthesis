@@ -3,15 +3,24 @@
 # ~~~~
 
 # Home page
-GET        /                     controllers.Application.step0
-GET        /step0                controllers.Application.step0
-POST       /step1                controllers.Application.step1
-POST       /step2                controllers.Application.step2
-GET        /step3                controllers.Application.step3
-GET        /step4                controllers.Application.step4
-GET        /step5                controllers.Application.step5
+GET         /                     controllers.Application.index
+GET         /step0                controllers.Application.step0
+POST        /step1                controllers.Application.step1
+POST        /step2                controllers.Application.step2
+GET         /step3                controllers.Application.step3
+GET         /step4                controllers.Application.step4
+GET         /step5                controllers.Application.step5
 
+
+GET         /home                 controllers.Application.home
+GET         /load                 controllers.Application.load
+GET         /variables            controllers.Application.variables
+GET         /hierarchy            controllers.Application.hierarchy
+GET         /groups               controllers.Application.groups
+GET         /constraints          controllers.Application.constraints
+GET         /afm                  controllers.Application.afm
+GET         /synthesize           controllers.Application.synthesize
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file         controllers.Assets.at(path="/public", file)
-GET        /webjars/*file        controllers.WebJarAssets.at(file)
+GET         /assets/*file         controllers.Assets.at(path="/public", file)
+GET         /webjars/*file        controllers.WebJarAssets.at(file)

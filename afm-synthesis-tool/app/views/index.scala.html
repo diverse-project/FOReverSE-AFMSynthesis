@@ -1,12 +1,78 @@
-@header = {
 
-}
+    <!DOCTYPE html>
 
-@footer = {
+<html ng-app="AFMSynthesisApp">
+    <head>
+        <title>AFM synthesis</title>
+        <link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.css"))'>
+        <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("font-awesome.min.css"))'>
+        <link rel="stylesheet" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+    </head>
+    <body>
+        <div class="container">
 
-}
+                <!-- Progress Bar -->
 
-@main("", "", header, footer) {
+            <div class="row">
+                <div class="row step">
+                    <div id="div1" class="col-md-2" >
+                        <a href="#load">
+                            <span class="fa fa-cloud-upload"></span>
+                            <p>Upload a Matrix</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="#variables">
+                            <span class="fa fa-table"></span>
+                            <p>Features Attributes</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2" >
+                        <a href="#hierarchy">
+                            <span class="fa fa-list-ul"></span>
+                            <p>Hierarchy</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2" >
+                        <a href="#groups">
+                            <span class="fa fa-group"></span>
+                            <p>Feature Groups</p>
+                        </a>
+                    </div>
+                    <div class="col-md-2" >
+                        <a href="#constraints">
+                            <span class="fa fa-check"></span>
+                            <p>Constraints</p>
+                        </a>
+                    </div>
+                    <div id="last" class="col-md-2" >
+                        <a href="#afm">
+                            <span class="fa fa-cloud-download"></span>
+                            <p>AFM</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+                <!-- Content -->
+
+            <div class="row">
+
+                <div ng-view></div>
+
+            </div>
 
 
-}
+        </div>
+    </body>
+
+    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
+    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.js"))'></script>
+    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("angular.min.js"))'></script>
+    <script type='text/javascript' src='@routes.Assets.at("javascripts/angular-route.min.js")'></script>
+
+    <script type='text/javascript' src='@routes.Assets.at("javascripts/controllers/afm-synthesis-controller-ws.js")'></script>
+
+
+</html>

@@ -4,4 +4,5 @@
 /.idea
 /projectFilesBackup
 sicstus_reasoner/revfm.sav
-input/generated/
+input/
+generated/

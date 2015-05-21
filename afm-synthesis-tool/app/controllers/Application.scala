@@ -8,24 +8,27 @@ import com.github.tototoshi.csv._
 import foreverse.afmsynthesis.algorithm.{SimpleDomainKnowledge, ConfigurationMatrix, AFMSynthesizer}
 import model.{SynthesisWorker, InteractiveDomainKnowledge}
 import play.api._
+import play.api.libs.iteratee.{Enumerator, Iteratee}
+import play.api.mvc.WebSocket.FrameFormatter
 import play.api.mvc._
-
 import scala.collection.mutable
 import akka.actor.ActorSystem
+import play.api.Play.current
+
+import play.api.libs.json._
+
+import scala.util.control.NonFatal
+
 
 object Application extends Controller {
 
-  val prop = Props[SynthesisWorker]
-  val system = ActorSystem("afm-synthesis-system")
 
   type Matrix = List[List[String]]
   val matrices = mutable.Map.empty[String, Matrix] // FIXME : not thread safe !
   val synthesizers = mutable.Map.empty[String, AFMSynthesizer] // FIXME : not thread safe !
   // FIXME : empty maps when possible
 
-  def index = Action {
-    Ok(views.html.step0_load())
-  }
+  // Classic
 
   def step0 = Action {
     Ok(views.html.step0_load())
@@ -50,7 +53,7 @@ object Application extends Controller {
 
 
       // Create synthesis worker
-      val synthesisWorker = system.actorOf(prop)
+//      val synthesisWorker = system.actorOf(synthesisWorkerProp)
 //      val knowledge = new InteractiveDomainKnowledge;
       val knowledge = new SimpleDomainKnowledge;
       val synthesizer = new AFMSynthesizer()
@@ -103,4 +106,45 @@ object Application extends Controller {
     Ok(views.html.step5_afm())
   }
 
+
+
+  // Websockets
+
+  def index = Action {
+    Ok(views.html.index())
+  }
+
+  def home = Action {
+    Ok(views.html.home())
+  }
+
+  def load = Action {
+    Ok(views.html.load())
+  }
+
+  def variables = Action {
+    Ok(views.html.variables())
+  }
+
+  def hierarchy = Action {
+    Ok(views.html.hierarchy())
+  }
+
+  def groups = Action {
+    Ok(views.html.groups())
+  }
+
+  def constraints = Action {
+    Ok(views.html.constraints())
+  }
+
+  def afm = Action {
+    Ok(views.html.afm())
+  }
+
+  def synthesize = WebSocket.acceptWithActor[JsValue, JsValue] { request => out =>
+    SynthesisWorker.props(out)
+  }
+
 }
+
